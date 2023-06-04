@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 # import binascii
+from __future__ import annotations
+
 import asyncio
 import logging
 
@@ -15,39 +17,101 @@ from .state import *
 logger = logging.getLogger(__name__)
 
 
-class Connection:
-    def __init__(self, mac):
-        self.set_mode(EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
+class Myo:
+    __slots__ = ("__battery_level", "__device", "__firmware", "__name", "state")
 
-        self.firmware = Firmware(self.readCharacteristic(0x17))
-        # logging.debug("firmware version: %d.%d.%d.%d".format(struct.unpack("4h", self.firmware))
+    def __init__(self):
+        self.state = MyoState()
 
-        self.name = self.readCharacteristic(0x03).decode("utf-8")
-        logging.info(f"device name: {self.name}")
+    @property
+    def battery_level(self) -> int:
+        return self.__battery_level
 
-        # info = self.info()
-        self.cmd(SleepMode().never())
+    @property
+    def device(self) -> BLEDevice:
+        return self.__device
 
-        self.subscribe()
+    @property
+    def firmware(self) -> Firmware:
+        return self.__firmware
 
-        self.resync()
+    @property
+    def name(self) -> str:
+        return self.__name
 
-    def battery(self):
-        # Battery percentage
-        return ord(self.readCharacteristic(0x11))
+    @classmethod
+    async def with_mac(cls, mac: str) -> Myo:
+        def match_myo_mac(device: BLEDevice, _: AdvertisementData):
+            if mac.lower() == device.address.lower():
+                return True
+            return False
 
-    def cmd(self, payload):
-        # Send command to MYO (see Command class)
-        self.writeCharacteristic(0x19, payload.data, True)
-
-    def emg_mode(self, state=True):
-        # Start to collect EMG data
-        if not state:
-            self.set_mode(EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
+        self = cls()
+        if mac and len(mac) != 0:
+            self.__device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
+            if self.device is None:
+                logger.error(f"could not find device with address {mac}")
+                return self
         else:
-            self.set_mode(EMGMode.ON, IMUMode.DATA, ClassifierMode.OFF)
+            logger.error("no mac address was specified")
+            return self
 
-    def info(self):
+        async with BleakClient(self.device) as client:
+            logger.info(f"connected to device {self.device.address}")
+            await self.startup(client)
+
+        return self
+
+    @classmethod
+    async def with_uuid(cls) -> Myo:
+        def match_myo_uuid(_: BLEDevice, adv: AdvertisementData):
+            if str(UUID.MYO_SERVICE).lower() in adv.service_uuids:
+                return True
+            return False
+
+        self = cls()
+        self.__device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
+        if self.device is None:
+            logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
+            return self
+
+        async with BleakClient(self.device) as client:
+            logger.info(f"connected to device {self.device.address}")
+            await self.startup(client)
+
+        return self
+
+    async def startup(self, client):
+        # get the device name
+        self.__name = self.device.name
+        # get the firmware version
+        fw = await client.read_gatt_char(Handle.FIRMWARE_VERSION.value)  # pyright: ignore
+        self.__firmware = Firmware(fw)
+        # do the warmup
+        await self.warmup(client)
+        # reset the emg/imu mode
+        await self.resync(client)
+        # reset MyoState
+        self.state.unsync()
+
+    async def battery(self, client):
+        # Battery percentage
+        val = await client.read_gatt_char(Handle.BATTERY.value)  # pyright: ignore
+        self.__battery_level = ord(val)
+
+    async def cmd(self, client, payload):
+        """Send command to MYO (see Command class)"""
+        await client.write_gatt_char(Handle.COMMAND.value, payload.data, True)  # pyright: ignore
+
+    async def emg_mode(self, client, state=True):
+        if state:
+            await self.set_mode(client, EMGMode.ON, IMUMode.DATA, ClassifierMode.OFF)
+        else:
+            await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
+
+    async def info(self, client):
+        _ = client
+        """
         info_dict = {}
         for service in self.getServices():  # btle.Peripheral
             uuid = binascii.b2a_hex(service.uuid.binVal).decode("utf-8")[4:8]
@@ -115,71 +179,12 @@ class Connection:
             info_dict.update({service_name: data_dict})
             # end service
         return info_dict
+        """
 
-    def subscribe(self):
-        # Subscribe to all notifications
-        # Subscribe to imu notifications
-        self.writeCharacteristic(Handle.IMU.value + 1, b"\x01\x00", True)  # pyright: ignore
-        # Subscribe to classifier
-        self.writeCharacteristic(Handle.CLASSIFIER.value + 1, b"\x02\x00", True)  # pyright: ignore
-        # Subscribe to emg notifications
-        self.writeCharacteristic(Handle.EMG.value + 1, b"\x01\x00", True)  # pyright: ignore
-
-
-class MyoDevice:
-    def __init__(self):
-        self.device = None
-
-    @classmethod
-    async def with_mac(cls, mac: str):
-        def match_myo_mac(device: BLEDevice, _: AdvertisementData):
-            if mac.lower() == device.address.lower():
-                return True
-            return False
-
-        self = cls()
-        if mac and len(mac) != 0:
-            self.device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
-            if self.device is None:
-                logger.error(f"could not find device with address {mac}")
-                return None
-        else:
-            logger.error("no mac address was specified")
-            return None
-
-        return self
-
-    @classmethod
-    async def with_uuid(cls):
-        def match_myo_uuid(_: BLEDevice, adv: AdvertisementData):
-            if str(UUID.MYO_SERVICE).lower() in adv.service_uuids:
-                return True
-            return False
-
-        self = cls()
-        self.device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
-        if self.device is None:
-            logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
-            return None
-        return self
-        logger.info(f"connected to device {self.device.address}")
-
-        # init MyoState
-        self.state = MyoState()
-        self.state.arm = Arm.UNSYNC
-        self.state.pose = Pose.UNSYNC
-        self.state.x_direction = XDirection.UNSYNC
-
-    async def cmd(self, client, payload):
-        """Send command to MYO (see Command class)"""
-        await client.write_gatt_char(0x18, payload.data, True)
-
-    async def resync(self):
+    async def resync(self, client):
         # Reset classifier
-        assert self.device
-        async with BleakClient(self.device) as client:
-            await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.OFF)
-            await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
+        await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.OFF)
+        await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
 
     async def set_leds(self, client, *args):
         """Set leds color
@@ -200,20 +205,27 @@ class MyoDevice:
         # Set mode for EMG, IMU, classifier
         await self.cmd(client, SetMode(emg, imu, classifier))
 
+    async def subscribe(self, client):
+        # Subscribe to imu notifications
+        # await client.write_gatt_char(Handle.IMU.value + 1, b"\x01\x00", True)  # pyright: ignore
+        # Subscribe to classifier
+        # await client.write_gatt_char(Handle.CLASSIFIER.value + 1, b"\x02\x00", True)  # pyright: ignore
+        # Subscribe to emg notifications
+        await client.write_gatt_char(Handle.EMG.value + 1, b"\x01\x00", True)  # pyright: ignore
+
     async def vibrate(self, client, length, strength=None):
         """Vibrate for x ms"""
         await self.cmd(client, Vibration(length, strength))
 
-    async def warmup(self):
-        assert self.device
-        async with BleakClient(self.device) as client:
-            await self.set_leds(client, [255, 0, 0], [255, 0, 0])
-            await asyncio.sleep(0.5)
-            await self.set_leds(client, [0, 255, 0], [0, 255, 0])
-            await asyncio.sleep(0.5)
-            await self.set_leds(client, [0, 0, 255], [0, 0, 255])
-            await asyncio.sleep(0.5)
-            await self.set_leds(client, [255, 255, 255], [255, 255, 255])
+    async def warmup(self, client):
+        await self.cmd(client, SleepMode().never())
+        await self.set_leds(client, [255, 0, 0], [255, 0, 0])
+        await asyncio.sleep(0.5)
+        await self.set_leds(client, [0, 255, 0], [0, 255, 0])
+        await asyncio.sleep(0.5)
+        await self.set_leds(client, [0, 0, 255], [0, 0, 255])
+        await asyncio.sleep(0.5)
+        await self.set_leds(client, [255, 255, 255], [255, 255, 255])
 
     """
     def handleNotification(self, cHandle, data):

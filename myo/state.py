@@ -107,6 +107,11 @@ class MyoState:
         else:
             return self.imu.quat
 
+    def unsync(self):
+        self.arm = Arm.UNSYNC
+        self.pose = Pose.UNSYNC
+        self.x_direction = XDirection.UNSYNC
+
     def __str__(self):
         if self.pose not in ["rest", "unknown"]:
             a = ~self.imu.quat * self.napq
