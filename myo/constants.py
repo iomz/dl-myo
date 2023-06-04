@@ -101,6 +101,17 @@ class UUID(Enum):
         return str(self.value)  # pyright: ignore
 
 
+class Handle(Enum):
+    BATTERY = 16
+    COMMAND = 24
+    NAME = 55
+    FIRMWARE_INFO = 20
+    FIRMWARE_VERSION = 22
+    IMU = 0x1C
+    EMG = 0x27
+    CLASSIFIER = 0x23
+
+
 class Arm(Enum):
     UNKNOWN = 0
     RIGHT = 1
@@ -133,12 +144,6 @@ class EMGMode(Enum):
     ON = 0x01
     SEND = 0x02
     SEND_RAW = 0x03
-
-
-class Handle(Enum):
-    IMU = 0x1C
-    EMG = 0x27
-    CLASSIFIER = 0x23
 
 
 class HardwareRev(Enum):

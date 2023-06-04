@@ -1,81 +1,21 @@
 import argparse
+import asyncio
 import logging
 
-import asyncio
-from bleak import BleakClient, BleakScanner
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
+from bleak import BleakClient
 
 from myo import *
 
 
 async def main(args: argparse.Namespace):
-    def match_myo_uuid(device: BLEDevice, adv: AdvertisementData):
-        if UUID.MYO_SERVICE.lower() in adv.service_uuids:
-            return True
-
-        return False
-
-    def match_myo_mac(device: BLEDevice, adv: AdvertisementData):
-        if args.address.lower() == device.address.lower():
-            return True
-
-        return False
-
-    def handle_disconnect(_: BleakClient):
-        print("Device was disconnected, goodbye.")
-        # cancelling all tasks effectively ends the program
-        for task in asyncio.all_tasks():
-            task.cancel()
-
     logger.info("starting scan...")
 
-    if args.address and len(args.address) != 0:
-        device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
-        if device is None:
-            logger.error(f"could not find device with address {args.address}")
-            return
-    else:
-        device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
-        if device is None:
-            logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
-            return
+    m = await Myo.with_uuid()
+    logger.info(f"{m.name}: {m.device.address} ({m.firmware})")
+    async with BleakClient(m.device) as client:
+        await m.vibrate(client, 3)
 
-    async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
-        logger.info("connected")
-
-        for service in client.services:
-            logger.info("[Service] %s", service)
-
-            for char in service.characteristics:
-                if "read" in char.properties:
-                    try:
-                        value = await client.read_gatt_char(char.uuid)
-                        logger.info(
-                            "  [Characteristic] %s (%s), Value: %r",
-                            char,
-                            ",".join(char.properties),
-                            value,
-                        )
-                    except Exception as e:
-                        logger.error(
-                            "  [Characteristic] %s (%s), Error: %s",
-                            char,
-                            ",".join(char.properties),
-                            e,
-                        )
-
-                else:
-                    logger.info("  [Characteristic] %s (%s)", char, ",".join(char.properties))
-
-                for descriptor in char.descriptors:
-                    try:
-                        value = await client.read_gatt_descriptor(descriptor.handle)
-                        logger.info("    [Descriptor] %s, Value: %r", descriptor, value)
-                    except Exception as e:
-                        logger.error("    [Descriptor] %s, Error: %s", descriptor, e)
-
-        logger.info("disconnecting...")
+    logger.info("warmup complete.")
 
 
 if __name__ == "__main__":
@@ -101,4 +41,5 @@ if __name__ == "__main__":
         level=log_level,
         format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
     )
+    logging.getLogger("myo").setLevel(level=log_level)
     asyncio.run(main(args))
