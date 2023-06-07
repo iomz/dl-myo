@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import binascii
 import logging
 
 from bleak import BleakClient, BleakScanner
@@ -17,11 +18,11 @@ from .state import *
 logger = logging.getLogger(__name__)
 
 
-class Myo:
-    __slots__ = ("__battery_level", "__device", "__firmware", "__name", "state")
+class Device:
+    __slots__ = ("__battery_level", "__device", "__firmware", "__name", "__state")
 
     def __init__(self):
-        self.state = MyoState()
+        self.__state = MyoState()
 
     @property
     def battery_level(self) -> int:
@@ -39,21 +40,26 @@ class Myo:
     def name(self) -> str:
         return self.__name
 
+    @property
+    def state(self) -> MyoState:
+        return self.__state
+
     @classmethod
-    async def with_mac(cls, mac: str) -> Myo:
+    async def with_mac(cls, mac: str) -> Device:
         def match_myo_mac(device: BLEDevice, _: AdvertisementData):
             if mac.lower() == device.address.lower():
                 return True
             return False
 
         self = cls()
-        if mac and len(mac) != 0:
+        try:
+            # connect to the device
             self.__device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
             if self.device is None:
                 logger.error(f"could not find device with address {mac}")
                 return self
-        else:
-            logger.error("no mac address was specified")
+        except:
+            logger.error("the mac address may be invalid")
             return self
 
         async with BleakClient(self.device) as client:
@@ -63,13 +69,14 @@ class Myo:
         return self
 
     @classmethod
-    async def with_uuid(cls) -> Myo:
+    async def with_uuid(cls) -> Device:
         def match_myo_uuid(_: BLEDevice, adv: AdvertisementData):
             if str(UUID.MYO_SERVICE).lower() in adv.service_uuids:
                 return True
             return False
 
         self = cls()
+        # connect to the device
         self.__device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
         if self.device is None:
             logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
@@ -80,19 +87,6 @@ class Myo:
             await self.startup(client)
 
         return self
-
-    async def startup(self, client):
-        # get the device name
-        self.__name = self.device.name
-        # get the firmware version
-        fw = await client.read_gatt_char(Handle.FIRMWARE_VERSION.value)  # pyright: ignore
-        self.__firmware = Firmware(fw)
-        # do the warmup
-        await self.warmup(client)
-        # reset the emg/imu mode
-        await self.resync(client)
-        # reset MyoState
-        self.state.unsync()
 
     async def battery(self, client):
         # Battery percentage
@@ -109,77 +103,44 @@ class Myo:
         else:
             await self.set_mode(client, EMGMode.OFF, IMUMode.DATA, ClassifierMode.ON)
 
-    async def info(self, client):
-        _ = client
-        """
-        info_dict = {}
-        for service in self.getServices():  # btle.Peripheral
-            uuid = binascii.b2a_hex(service.uuid.binVal).decode("utf-8")[4:8]
-            service_name = Services.get(int(uuid, base=16), uuid)
+    async def get_services(self, client) -> dict:
+        sd = {"services": {}}
+        for service in client.services:  # BleakGATTServiceCollection
+            service_id = service.uuid[4:8]
+            service_name = Services.get(int(service_id, base=16))
 
-            if service_name in ("1801", "0004", "0006"):  # unknown
+            if not service_name:  # unknown service
                 continue
 
-            logging.info(str(service_name))
+            sd["services"][service_id] = {
+                "name": service_name,
+                "handle": service.handle,
+                "chars": {},
+            }
+            for char in service.characteristics:  # List[BleakGATTCharacteristic]
+                char_id = char.uuid[4:8]
+                char_name = Services.get(int(char_id, base=16))
 
-            # constract data for service
-            data_dict = {}
-            for char in service.getCharacteristics():
-                c_uuid = binascii.b2a_hex(char.uuid.binVal).decode("utf-8")[4:8]
-                num = int(c_uuid, base=16)
-                name = Services.get(num, hex(num))
-                if "EmgData" in name:
-                    logging.info(name)
-                    data_dict.update({name: ""})
-                    continue
-                if name in ("0x602", "0x104", "Command", "0x2a05"):  # TODO: make this more sense
-                    logging.info(name)
-                    data_dict.update({name: ""})
+                if not char_name:  # unknown characteristic
                     continue
 
-                if char.supportsRead():
-                    b = bytearray(char.read())
-                    try:
-                        if name in ("Info1", "Info2"):
-                            b = list(b)
-                        elif name == "FirmwareVersion":
-                            b = Firmware(b)
-                        elif name == "HardwareInfo":
-                            b = HardwareInfo(b)
-                        elif name == "BatteryLevel":
-                            b = b[0]
-                            b = int(b)
-                        else:  # if anything else, stringify the bytearray
-                            b = str(list(b))
-                            logging.debug(f"{name}: {b}")
-                    except Exception as e:
-                        logging.debug(f"{name}: {b} {e}")
-                    logging.info(f"{name} {b}")
-                    data_dict.update({name: b})
-                    continue
+                sd["services"][service_id]["chars"][char_id] = {
+                    "name": char_name,
+                    "handle": char.handle,
+                }
 
-                # TODO
-                # not char.supportsRead()
-                try:
-                    b = bytearray(char.read())
-                    if name in ("0x104", "ClassifierEvent"):  # TODO
-                        b = list(b)
-                    elif name == "IMUData":
-                        b = IMU(b)
-                    elif name == "MotionEvent":
-                        b = MotionEvent(b)
+                sd["services"][service_id]["chars"][char_id]["properties"] = ",".join(char.properties)
+                if "read" in char.properties:
+                    blob = await client.read_gatt_char(char.uuid)
+                    if char_name == "ManufacturerNameString":
+                        value = blob.decode("utf-8")
                     else:
-                        b = str(list(b))
-                except:
-                    logging.debug(f"{name}: {char.props}")
-                    data_dict.update({name: char})
-                    continue
-                data_dict.update({name: b})
-                # end char
-            info_dict.update({service_name: data_dict})
-            # end service
-        return info_dict
-        """
+                        value = binascii.b2a_hex(blob).decode("utf-8")
+                    sd["services"][service_id]["chars"][char_id]["value"] = value
+            # end char
+        # end service
+
+        return sd
 
     async def resync(self, client):
         # Reset classifier
@@ -204,6 +165,19 @@ class Myo:
     async def set_mode(self, client, emg, imu, classifier):
         # Set mode for EMG, IMU, classifier
         await self.cmd(client, SetMode(emg, imu, classifier))
+
+    async def startup(self, client):
+        # get the device name
+        self.__name = str(self.device.name)
+        # get the firmware version
+        fw = await client.read_gatt_char(Handle.FIRMWARE_VERSION.value)  # pyright: ignore
+        self.__firmware = Firmware(fw)
+        # do the warmup
+        await self.warmup(client)
+        # reset the emg/imu mode
+        await self.resync(client)
+        # reset MyoState
+        self.state.unsync()
 
     async def subscribe(self, client):
         # Subscribe to imu notifications

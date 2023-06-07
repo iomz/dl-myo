@@ -1,31 +1,35 @@
 import argparse
 import asyncio
+import json
 import logging
 
 from bleak import BleakClient
 
-from myo import *
+import myo
 
 
 async def main(args: argparse.Namespace):
-    logger.info("starting scan...")
+    logging.info("starting scan...")
 
-    m = await Myo.with_uuid()
-    logger.info(f"{m.name}: {m.device.address} ({m.firmware})")
+    if args.mac and len(args.mac) != 0:
+        m = await myo.Device.with_mac(args.mac)
+    else:
+        m = await myo.Device.with_uuid()
+
+    if m.device is None:
+        return
+
+    logging.info(f"{m.name}: {m.device.address} ({m.firmware})")
     async with BleakClient(m.device) as client:
+        info = await m.get_services(client)
+        print(json.dumps(info, indent=2))
         await m.vibrate(client, 3)
 
-    logger.info("warmup complete.")
+    logging.info("warmup complete.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--address",
-        metavar="<address>",
-        help="the address of the bluetooth device to connect to",
-    )
 
     parser.add_argument(
         "-d",
@@ -33,6 +37,14 @@ if __name__ == "__main__":
         action="store_true",
         help="sets the log level to debug",
     )
+    parser.add_argument(
+        "-m",
+        "--mac",
+        default="",
+        help="the mac address to connect to",
+        metavar="<mac-address>",
+    )
+
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
