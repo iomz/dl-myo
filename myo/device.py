@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import binascii
+import json
 import logging
 
 from bleak import BleakClient, BleakScanner
@@ -92,47 +93,57 @@ class Device:
         """
         await self.command(client, DeepSleep())
 
-    async def get_services(self, client: BleakClient) -> dict:
+    async def emg_service(self, client):
+        """
+        EMG Service
+        """
+        await client.write_gatt_char(Handle.EMG_SERVICE.value, b"\x01\x00", True)  # pyright: ignore
+
+    async def get_services(self, client: BleakClient, indent=2) -> str:
         """fetch available services as dict"""
         sd = {"services": {}}
         for service in client.services:  # BleakGATTServiceCollection
-            service_id = service.uuid[4:8]
-            service_name = Services.get(int(service_id, base=16))
-
-            if not service_name:  # unknown service
+            try:
+                service_name = Handle(service.handle).name  # pyright: ignore
+            except Exception as e:
+                logger.debug("unknown handle: {}", e)
                 continue
 
-            sd["services"][service_id] = {
+            sd["services"][service.handle] = {
                 "name": service_name,
-                "handle": service.handle,
                 "uuid": service.uuid,
                 "chars": {},
             }
             for char in service.characteristics:  # List[BleakGATTCharacteristic]
-                char_id = char.uuid[4:8]
-                char_name = Services.get(int(char_id, base=16))
-
-                if not char_name:  # unknown characteristic
+                try:
+                    char_name = Handle(char.handle).name  # pyright: ignore
+                except Exception as e:
+                    logger.debug("unknown handle: {}", e)
                     continue
 
-                sd["services"][service_id]["chars"][char_id] = {
+                sd["services"][service.handle]["chars"][char.handle] = {
                     "name": char_name,
-                    "handle": char.handle,
                     "uuid": char.uuid,
                 }
 
-                sd["services"][service_id]["chars"][char_id]["properties"] = ",".join(char.properties)
+                sd["services"][service.handle]["chars"][char.handle]["properties"] = ",".join(char.properties)
                 if "read" in char.properties:
-                    blob = await client.read_gatt_char(char.uuid)
-                    if char_name == "ManufacturerNameString":
+                    blob = await client.read_gatt_char(char.handle)
+                    if char_name == Handle.MANUFACTURER_NAME_STRING.name:  # pyright: ignore
                         value = blob.decode("utf-8")
+                    elif char_name == Handle.FIRMWARE_INFO.name:  # pyright: ignore
+                        value = FirmwareInfo(blob).to_dict()
+                    elif char_name == Handle.FIRMWARE_VERSION.name:  # pyright: ignore
+                        value = str(FirmwareVersion(blob))
+                    elif char_name == Handle.BATTERY_LEVEL.name:  # pyright: ignore
+                        value = ord(blob)
                     else:
                         value = binascii.b2a_hex(blob).decode("utf-8")
-                    sd["services"][service_id]["chars"][char_id]["value"] = value
+                    sd["services"][service.handle]["chars"][char.handle]["value"] = value
             # end char
         # end service
 
-        return sd
+        return json.dumps(sd, indent=indent)
 
     async def led(self, client: BleakClient, *args):
         """

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import aenum
-
+"""
+# myo/handle.py
+#
 # reflection from myo-bluetooth/myohw.h
 # the names are slightly different in dl-myo
 Services = {
@@ -26,6 +27,8 @@ Services = {
     0x2A19: "BatteryLevelCharacteristic",
     0x2A00: "DeviceName",
 }
+"""
+import aenum
 
 
 class Handle(aenum.Enum):
@@ -53,7 +56,7 @@ class Handle(aenum.Enum):
     UNKNOWN_CHAR = 55
 
 
-class UUID(aenum.Enum):
+class UUID:
     MYO_SERVICE = "d5060001-a904-deb9-4748-2c7f4a124842"
 
     # [Service] (Handle: 12): Device Information
@@ -117,6 +120,3 @@ class UUID(aenum.Enum):
     #   [Characteristic] (Handle: 55): Unknown Characteristic (indicate)
     #     [Descriptor] 00002902-0000-1000-8000-00805f9b34fb (Handle: 57): Client Characteristic Configuration, Value: bytearray(b'')
     UNKNOWN_CHAR = "d5060602-a904-deb9-4748-2c7f4a124842"
-
-    def __str__(self):
-        return str(self.value)  # pyright: ignore

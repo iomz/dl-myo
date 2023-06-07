@@ -2,14 +2,16 @@
 # myo/types.py
 # based on myo-bluetooth/myohw.h
 import aenum
+import json
 import struct
 
 
-ACCELEROMETER_SCALE = 2048.0
-DEFAULT_IMU_SAMPLE_RATE = 50
-EMG_DEFAULT_STREAMING_RATE = 200
-GYROSCOPE_SCALE = 16.0
-ORIENTATION_SCALE = 16384.0
+class Constant(aenum.NamedConstant):
+    ACCELEROMETER_SCALE = 2048.0
+    DEFAULT_IMU_SAMPLE_RATE = 50
+    EMG_DEFAULT_STREAMING_RATE = 200
+    GYROSCOPE_SCALE = 16.0
+    ORIENTATION_SCALE = 16384.0
 
 
 # -> myohw_arm_t
@@ -60,12 +62,17 @@ class ClassifierModelType(aenum.Enum):
 # -> myohw_emg_data_t
 class EMGData:
     def __init__(self, data):
-        u = struct.unpack("<8HB", data)  # an extra byte for some reason
+        # TODO: check the endian
+        # u = struct.unpack("<16b", data)
+        u = struct.unpack("16b", data)
         self.sample1 = u[:8]
-        self.sample2 = u[9:]
+        self.sample2 = u[8:]
 
     def __str__(self):
-        return f"EMG {str(self.sample1) + str(self.sample2)}"
+        return str(self.sample1 + self.sample2)
+
+    def json(self):
+        return json.dumps({"sample1": self.sample1, "sample2": self.sample2})
 
 
 # -> myohw_emg_mode_t
@@ -78,32 +85,43 @@ class EMGMode(aenum.Enum):
 # -> myohw_fw_info_t
 class FirmwareInfo:
     def __init__(self, data):
-        assert len(data) == 20
-        u = struct.unpack("6BH5B7B", data)  # 20 bytes
-        ser = list(u[1])
+        u = struct.unpack("6BH12B", data)  # 20 bytes
+        assert len(u) == 19
+        ser = list(u[:6])
         ser.reverse()
         ser = [hex(i)[-2:] for i in ser]
-        self.serial_number = ":".join(ser).upper()
-        self.unlock_pose = Pose(u[1])
-        self.active_classifier_type = u[2][0]
-        self.active_classifier_index = u[2][1]
-        self.has_custom_classifier = u[2][2]
-        self.stream_indicating = u[2][3]
-        self.sku = SKU(u[2][4])
-        self.reserved = u[3]
+        self._serial_number = ":".join(ser).upper()
+        self._unlock_pose = Pose(u[6]).name  # pyright: ignore
+        self._active_classifier_type = ClassifierModelType(u[7]).name  # pyright: ignore
+        self._active_classifier_index = u[8]
+        self._has_custom_classifier = bool(u[9])
+        self._stream_indicating = bool(u[10])
+        self._sku = SKU(u[11]).name  # pyright: ignore
+        self._reserved = u[12:]
+
+    def to_dict(self):
+        return {
+            "serial_number": self._serial_number,
+            "unlock_pose": self._has_custom_classifier,
+            "active_classifier_type": self._active_classifier_type,
+            "active_classifier_index": self._active_classifier_index,
+            "has_custom_classifier": self._has_custom_classifier,
+            "stream_indicating": self._stream_indicating,
+            "sku": self._sku,
+        }
 
 
 # -> myohw_fw_version_t
 class FirmwareVersion:
     def __init__(self, data):
         u = struct.unpack("4H", data)  # 4x uint16_t
-        self.major = u[0]
-        self.minor = u[1]
-        self.patch = u[2]
-        self.hardware_rev = HardwareRev(u[3])
+        self._major = u[0]
+        self._minor = u[1]
+        self._patch = u[2]
+        self._hardware_rev = HardwareRev(u[3])
 
     def __str__(self):
-        return f"{self.major}.{self.minor}.{self.patch}.{self.hardware_rev.name}"  # pyright: ignore
+        return f"{self._major}.{self._minor}.{self._patch}.{self._hardware_rev.name}"  # pyright: ignore
 
 
 # -> myohw_hardware_rev_t
@@ -123,6 +141,9 @@ class IMUData:
             self.y = y
             self.z = z
 
+        def __dict__(self):
+            return {"w": self.w, "x": self.x, "y": self.y, "z": self.z}
+
     def __init__(self, data):
         u = struct.unpack("<10h", data)
         self.orientation = self.Orientation(u[0], u[1], u[2], u[3])
@@ -131,6 +152,15 @@ class IMUData:
         # self.accel = Vector(*[i / float(self.Scale.ACCELEROMETER) for i in data[4:7]])
         # self.gyro = Vector(*[i / float(self.Scale.GYROSCOPE) for i in data[7:]])
         # self.quat = Quaternion(*[i / float(self.Scale.ORIENTATION) for i in data[:4]])
+
+    def json(self):
+        return json.dumps(
+            {
+                "orientation": self.orientation.__dict__(),
+                "accelerometer": self.accelerometer,
+                "gyroscope": self.gyroscope,
+            }
+        )
 
 
 # -> myohw_imu_mode_t
