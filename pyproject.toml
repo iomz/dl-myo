@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dl-myo"
-version = "0.0.3"
+version = "0.1.0"
 authors = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
 Maintainers = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
-description = "A middleware to manage Myo EMG streams"
+description = "A replacement middleware to MyoConnect for Myo Armband"
 readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [
@@ -29,3 +29,5 @@ classifiers = [
 "Bug Tracker" = "https://github.com/iomz/dl-myo/issues"
 
 [tool]
+[tool.pyright]
+#reportGeneralTypeIssues = false

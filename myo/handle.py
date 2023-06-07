@@ -1,38 +1,62 @@
 # -*- coding: utf-8 -*-
-
-from aenum import Enum
-
+"""
+# myo/handle.py
+#
+# reflection from myo-bluetooth/myohw.h
+# the names are slightly different in dl-myo
 Services = {
-    0x1800: "InfoService",
-    0x2A00: "Name",
-    0x2A01: "Info1",
-    0x2A04: "Info2",
+    # core service
+    0x0001: "ControlService",
+    0x0101: "MyoInfoCharacteristic",
+    0x0201: "FirmwareVersionCharacteristic ",
+    0x0401: "CommandCharacteristic",
+    # imu service
+    0x0002: "ImuDataService",
+    0x0402: "ImuDataCharacteristic",
+    0x0502: "MotionEventCharacteristic",
+    0x0003: "ClassifierService",
+    0x0103: "ClassifierEventCharacteristic",
+    # emg service
+    0x0005: "EmgDataService",
+    0x0105: "EmgData0Characteristic",
+    0x0205: "EmgData1Characteristic",
+    0x0305: "EmgData2Characteristic",
+    0x0405: "EmgData3Characteristic",
+    # standard bluetooh device service
     0x180F: "BatteryService",
-    0x2A19: "BatteryLevel",
-    0x0001: "ControlService",  # < Myo info service
-    0x0101: "HardwareInfo",  # < Serial number for this Myo and various parameters which
-    # < are specific to this firmware. Read-only attribute.
-    # < See myohw_fw_info_t.
-    0x0201: "FirmwareVersion",  # < Current firmware version. Read-only characteristic.
-    # < See myohw_fw_version_t.
-    0x0401: "Command",  # < Issue commands to the Myo. Write-only characteristic.
-    # < See myohw_command_t.
-    0x0002: "IMUService",  # < IMU service
-    0x0402: "IMUData",  # < See myohw_imu_data_t. Notify-only characteristic. /*
-    0x0502: "MotionEvent",  # < Motion event data. Indicate-only characteristic. /*
-    0x0003: "ClassifierService",  # < Classifier event service.
-    0x0103: "ClassifierEvent",  # < Classifier event data. Indicate-only characteristic. See myohw_pose_t. /***
-    0x0005: "EmgDataService",  # < Raw EMG data service.
-    0x0105: "EmgData1",  # < Raw EMG data. Notify-only characteristic.
-    0x0205: "EmgData2",  # < Raw EMG data. Notify-only characteristic.
-    0x0305: "EmgData3",  # < Raw EMG data. Notify-only characteristic.
-    0x0405: "EmgData4",  # < Raw EMG data. Notify-only characteristic.
-    0x180A: "DeviceInformation",
-    0x2A29: "ManufacturerNameString",
+    0x2A19: "BatteryLevelCharacteristic",
+    0x2A00: "DeviceName",
 }
+"""
+import aenum
 
 
-class UUID(Enum):
+class Handle(aenum.Enum):
+    DEVICE_INFORMATION = 12
+    MANUFACTURER_NAME_STRING = 13
+    BATTERY_SERVICE = 15
+    BATTERY_LEVEL = 16
+    CONTROL_SERVICE = 19
+    FIRMWARE_INFO = 20
+    FIRMWARE_VERSION = 22
+    COMMAND = 24
+    IMU_SERVICE = 26
+    IMU_DATA = 27
+    MOTION_EVENT = 30
+    CLASSIFIER_SERVICE = 33
+    CLASSIFIER_EVENT = 34
+    FV_SERVICE = 37
+    FV_DATA = 38
+    EMG_SERVICE = 41
+    EMG0_DATA = 42
+    EMG1_DATA = 45
+    EMG2_DATA = 48
+    EMG3_DATA = 51
+    UNKNOWN_SERVICE = 54
+    UNKNOWN_CHAR = 55
+
+
+class UUID:
     MYO_SERVICE = "d5060001-a904-deb9-4748-2c7f4a124842"
 
     # [Service] (Handle: 12): Device Information
@@ -93,98 +117,6 @@ class UUID(Enum):
 
     # [Service] (Handle: 54): Unknown Service
     UNKNOWN_SERVICE = "d5060006-a904-deb9-4748-2c7f4a124842"
-    #   [Characteristic] (Handle: 55): Unknown Data (indicate)
+    #   [Characteristic] (Handle: 55): Unknown Characteristic (indicate)
     #     [Descriptor] 00002902-0000-1000-8000-00805f9b34fb (Handle: 57): Client Characteristic Configuration, Value: bytearray(b'')
-    UNKNOWN_DATA = "d5060602-a904-deb9-4748-2c7f4a124842"
-
-    def __str__(self):
-        return str(self.value)  # pyright: ignore
-
-
-class Handle(Enum):
-    BATTERY = 16
-    COMMAND = 24
-    NAME = 55
-    FIRMWARE_INFO = 20
-    FIRMWARE_VERSION = 22
-    IMU = 0x1C
-    EMG = 0x27
-    CLASSIFIER = 0x23
-
-
-class Arm(Enum):
-    UNKNOWN = 0
-    RIGHT = 1
-    LEFT = 2
-    UNSYNC = -1
-
-
-class ClassifierEvent(Enum):
-    SYNC = 1
-    UNSYNC = 2
-    POSE = 3
-    UNLOCK = 4
-    LOCK = 5
-    SYNCFAIL = 6
-    WARMUP = 7
-
-
-class ClassifierMode(Enum):
-    OFF = 0x00
-    ON = 0x01
-
-
-class ClassifierModelType(Enum):
-    BUILTIN = 0
-    CUSTOM = 1
-
-
-class EMGMode(Enum):
-    OFF = 0x00
-    ON = 0x01
-    SEND = 0x02
-    SEND_RAW = 0x03
-
-
-class HardwareRev(Enum):
-    C = 1
-    D = 2
-
-
-class IMUMode(Enum):
-    OFF = 0x00
-    DATA = 0x01
-    EVENTS = 0x02
-    ALL = 0x03
-    RAW = 0x04
-
-
-class MotionEventType(Enum):
-    TAP = 0
-
-
-class Pose(Enum):
-    REST = 0
-    FIST = 1
-    IN = 2
-    OUT = 3
-    SPREAD = 4
-    TAP = 5
-    UNSYNC = -1
-
-
-class SKU(Enum):
-    BLACK = 1
-    WHITE = 2
-    UNKNOWN = 0
-
-
-class SyncResult(Enum):
-    SYNC_FAILED_TOO_HARD = 1
-
-
-class XDirection(Enum):
-    UNKNOWN = 0
-    WRIST = 1
-    ELBOW = 2
-    UNSYNC = -1
+    UNKNOWN_CHAR = "d5060602-a904-deb9-4748-2c7f4a124842"
