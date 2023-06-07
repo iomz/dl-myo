@@ -8,12 +8,16 @@ version = "0.1.0"
 authors = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
-Maintainers = [
+maintainers = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
 description = "A replacement middleware to MyoConnect for Myo Armband"
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = [
+    "aenum",
+    "bleak",
+]
 classifiers = [
     "Framework :: AsyncIO",
     "Intended Audience :: Education",

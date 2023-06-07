@@ -1,0 +1,47 @@
+name: Build
+on:
+  release:
+    types: [published]
+jobs:
+  build-wheel:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        os: [macOS-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Lint
+        run: |
+          pip install flake8
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=examples,myo/handle.py
+      - name: Build
+        run: |
+          pip install hatch
+          python -m hatch build
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+  build-wheel-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: |
+          pip install hatch
+          python -m hatch build
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
