@@ -29,3 +29,5 @@ classifiers = [
 "Bug Tracker" = "https://github.com/iomz/dl-myo/issues"
 
 [tool]
+[tool.pyright]
+#reportGeneralTypeIssues = false
