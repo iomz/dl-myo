@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .types import *
+from .types import SleepMode, UnlockType, UserActionType
 
 
 # myohw_command_t
@@ -86,7 +86,13 @@ class Vibrate2(Command):
 
     @property
     def payload(self) -> bytearray:
-        return bytearray((self.steps.duration >> 0xFF, self.steps.duration & 0xFF, self.steps.strength))
+        return bytearray(
+            (
+                self.steps.duration >> 0xFF,
+                self.steps.duration & 0xFF,
+                self.steps.strength,
+            )
+        )
 
 
 # -> myohw_command_set_sleep_mode_t

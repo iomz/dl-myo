@@ -9,9 +9,9 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from .commands import *
-from .handle import *
-from .types import *
+from .commands import Command, SetMode, Vibrate, DeepSleep, LED, Vibrate2, SetSleepMode, Unlock, UserAction
+from .handle import Handle, UUID
+from .types import FirmwareInfo, FirmwareVersion
 
 # from .quaternion import Quaternion
 
@@ -46,8 +46,8 @@ class Device:
             if self.device is None:
                 logger.error(f"could not find device with address {mac}")
                 return self
-        except:
-            logger.error("the mac address may be invalid")
+        except Exception as e:
+            logger.error("the mac address may be invalid", e)
             return self
 
         # get the device name
@@ -99,7 +99,7 @@ class Device:
         """
         await client.write_gatt_char(Handle.EMG_SERVICE.value, b"\x01\x00", True)  # pyright: ignore
 
-    async def get_services(self, client: BleakClient, indent=2) -> str:
+    async def get_services(self, client: BleakClient, indent=2) -> str:  # noqa: C901
         """fetch available services as dict"""
         sd = {"services": {}}
         for service in client.services:  # BleakGATTServiceCollection
@@ -156,9 +156,9 @@ class Device:
         if not isinstance(args, tuple) or len(args) != 2:
             raise Exception(f"Unknown payload for LEDs: {args}")
 
-        for l in args:
-            if any(not isinstance(v, int) for v in l):
-                raise Exception(f"Values must be int 0-255: {l}")
+        for lst in args:
+            if any(not isinstance(v, int) for v in lst):
+                raise Exception(f"Values must be int 0-255: {lst}")
 
         await self.command(client, LED(args[0], args[1]))
 
