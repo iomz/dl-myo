@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dl-myo"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
