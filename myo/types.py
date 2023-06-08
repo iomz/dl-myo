@@ -72,7 +72,10 @@ class EMGData:
         return str(self.sample1 + self.sample2)
 
     def json(self):
-        return json.dumps({"sample1": self.sample1, "sample2": self.sample2})
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"sample1": self.sample1, "sample2": self.sample2}
 
 
 # -> myohw_emg_mode_t
