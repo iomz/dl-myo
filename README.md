@@ -1,9 +1,9 @@
 # dl-myo (Dongle-less Myo)
 
-[![PyPI Version](https://badge.fury.io/py/dl-myo.svg)](https://badge.fury.io/py/dl-myo)
 [![Build Status](https://github.com/iomz/dl-myo/workflows/Build/badge.svg)](https://github.com/iomz/dl-myo/actions?query=workflow%3ABuild)
-[![Image Size](https://ghcr-badge.egpl.dev/iomz/dl-myo/size?label=Image%20Size)](https://github.com/iomz/dl-myo/pkgs/container/dl-myo)
 [![Release Package](https://github.com/iomz/dl-myo/actions/workflows/release-package.yml/badge.svg)](https://github.com/iomz/dl-myo/actions/workflows/release-package.yml)
+[![Image Size](https://ghcr-badge.egpl.dev/iomz/dl-myo/size?label=Image%20Size)](https://github.com/iomz/dl-myo/pkgs/container/dl-myo)
+[![PyPI Version](https://badge.fury.io/py/dl-myo.svg)](https://badge.fury.io/py/dl-myo)
 
 dl-myo is a replacement to MyoConnect for Myo Armband without an official Myo dongle.
 
