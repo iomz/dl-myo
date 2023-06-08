@@ -2,7 +2,7 @@ version: "3.9"
 services:
   dl-myo:
     build: .
-    image: iomz/dl-myo:latest
+    image: ghcr.io/iomz/dl-myo:latest
     container_name: dl-myo
     network_mode: host
     privileged: true

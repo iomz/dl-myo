@@ -1,4 +1,4 @@
-name: Docker Push
+name: Release Package
 on:
   push:
     # Publish `main` as Docker `latest` image.
