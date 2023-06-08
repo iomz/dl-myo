@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  dl-myo:
+    build: .
+    image: ghcr.io/iomz/dl-myo:latest
+    container_name: dl-myo
+    network_mode: host
+    privileged: true
+    volumes:
+      - /var/run/dbus/:/var/run/dbus/:z
+    # for macOS, see https://github.com/zbentley/dbus-osx-examples/blob/master/installation/README.md
+    #- /opt/homebrew/opt/dbus:/var/run/dbus/:z

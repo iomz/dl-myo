@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import argparse
 import asyncio
 import logging
@@ -53,9 +56,7 @@ async def main(args: argparse.Namespace):
         await m.vibrate(client, VibrationType.MEDIUM)
 
         # enable emg and imu
-        await m.set_mode(
-            client, EMGMode.SEND_EMG, IMUMode.SEND_ALL, ClassifierMode.DISABLED
-        )
+        await m.set_mode(client, EMGMode.SEND_EMG, IMUMode.SEND_ALL, ClassifierMode.DISABLED)
 
         logging.info("sleep 1")
         await asyncio.sleep(0.5)
