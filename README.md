@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/iomz/dl-myo/workflows/build/badge.svg)](https://github.com/iomz/dl-myo/actions?query=workflow%3Abuild)
 [![Image Size](https://ghcr-badge.egpl.dev/iomz/dl-myo/size?label=image%20size)](https://github.com/iomz/dl-myo/pkgs/container/dl-myo)
 [![Python Versions](https://img.shields.io/pypi/pyversions/dl-myo.svg)](https://pypi.python.org/pypi/dl-myo)
-[![PyPI Version](https://img.shields.io/pypi/v/dl-myo.svg)](https://pypi.python.org/pypi/del-myo)
+[![PyPI Version](https://img.shields.io/pypi/v/dl-myo.svg)](https://pypi.python.org/pypi/dl-myo)
 [![License](https://img.shields.io/pypi/l/dl-myo.svg)](https://pypi.python.org/pypi/dl-myo)
 
 dl-myo is a replacement to MyoConnect for Myo Armband without an official Myo dongle.
