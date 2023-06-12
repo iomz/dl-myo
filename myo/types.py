@@ -94,12 +94,12 @@ class FirmwareInfo:
         ser.reverse()
         ser = [hex(i)[-2:] for i in ser]
         self._serial_number = ":".join(ser).upper()
-        self._unlock_pose = Pose(u[6]).name  # pyright: ignore
-        self._active_classifier_type = ClassifierModelType(u[7]).name  # pyright: ignore
+        self._unlock_pose = Pose(u[6]).name
+        self._active_classifier_type = ClassifierModelType(u[7]).name
         self._active_classifier_index = u[8]
         self._has_custom_classifier = bool(u[9])
         self._stream_indicating = bool(u[10])
-        self._sku = SKU(u[11]).name  # pyright: ignore
+        self._sku = SKU(u[11]).name
         self._reserved = u[12:]
 
     def to_dict(self):
@@ -124,7 +124,7 @@ class FirmwareVersion:
         self._hardware_rev = HardwareRev(u[3])
 
     def __str__(self):
-        return f"{self._major}.{self._minor}.{self._patch}.{self._hardware_rev.name}"  # pyright: ignore
+        return f"{self._major}.{self._minor}.{self._patch}.{self._hardware_rev.name}"
 
 
 # -> myohw_hardware_rev_t

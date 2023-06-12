@@ -9,7 +9,17 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from .commands import Command, SetMode, Vibrate, DeepSleep, LED, Vibrate2, SetSleepMode, Unlock, UserAction
+from .commands import (
+    Command,
+    SetMode,
+    Vibrate,
+    DeepSleep,
+    LED,
+    Vibrate2,
+    SetSleepMode,
+    Unlock,
+    UserAction,
+)
 from .handle import Handle, UUID
 from .types import FirmwareInfo, FirmwareVersion
 
@@ -42,7 +52,9 @@ class Device:
         self = cls()
         try:
             # scan the device
-            self.__device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
+            self.__device = await BleakScanner.find_device_by_filter(
+                match_myo_mac, cb=dict(use_bdaddr=True)
+            )
             if self.device is None:
                 logger.error(f"could not find device with address {mac}")
                 return self
@@ -64,7 +76,9 @@ class Device:
 
         self = cls()
         # scan the device
-        self.__device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
+        self.__device = await BleakScanner.find_device_by_filter(
+            match_myo_uuid, cb=dict(use_bdaddr=True)
+        )
         if self.device is None:
             logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
             return self
@@ -85,7 +99,7 @@ class Device:
         """
         Command Characteristic
         """
-        await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)  # pyright: ignore
+        await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
 
     async def deep_sleep(self, client: BleakClient):
         """
@@ -97,14 +111,14 @@ class Device:
         """
         EMG Service
         """
-        await client.write_gatt_char(Handle.EMG_SERVICE.value, b"\x01\x00", True)  # pyright: ignore
+        await client.write_gatt_char(Handle.EMG_SERVICE.value, b"\x01\x00", True)
 
-    async def get_services(self, client: BleakClient, indent=2) -> str:  # noqa: C901
+    async def get_services(self, client: BleakClient, indent=2) -> str:
         """fetch available services as dict"""
         sd = {"services": {}}
         for service in client.services:  # BleakGATTServiceCollection
             try:
-                service_name = Handle(service.handle).name  # pyright: ignore
+                service_name = Handle(service.handle).name
             except Exception as e:
                 logger.debug("unknown handle: {}", e)
                 continue
@@ -116,30 +130,32 @@ class Device:
             }
             for char in service.characteristics:  # List[BleakGATTCharacteristic]
                 try:
-                    char_name = Handle(char.handle).name  # pyright: ignore
+                    char_name = Handle(char.handle).name
                 except Exception as e:
                     logger.debug("unknown handle: {}", e)
                     continue
 
-                sd["services"][service.handle]["chars"][char.handle] = {
-                    "name": char_name,
-                    "uuid": char.uuid,
-                }
-
-                sd["services"][service.handle]["chars"][char.handle]["properties"] = ",".join(char.properties)
+                value = None
                 if "read" in char.properties:
                     blob = await client.read_gatt_char(char.handle)
-                    if char_name == Handle.MANUFACTURER_NAME_STRING.name:  # pyright: ignore
+                    if char_name == Handle.MANUFACTURER_NAME_STRING.name:
                         value = blob.decode("utf-8")
-                    elif char_name == Handle.FIRMWARE_INFO.name:  # pyright: ignore
+                    elif char_name == Handle.FIRMWARE_INFO.name:
                         value = FirmwareInfo(blob).to_dict()
-                    elif char_name == Handle.FIRMWARE_VERSION.name:  # pyright: ignore
+                    elif char_name == Handle.FIRMWARE_VERSION.name:
                         value = str(FirmwareVersion(blob))
-                    elif char_name == Handle.BATTERY_LEVEL.name:  # pyright: ignore
+                    elif char_name == Handle.BATTERY_LEVEL.name:
                         value = ord(blob)
                     else:
                         value = binascii.b2a_hex(blob).decode("utf-8")
-                    sd["services"][service.handle]["chars"][char.handle]["value"] = value
+
+                sd["services"][service.handle]["chars"][char.handle] = {
+                    "name": char_name,
+                    "uuid": char.uuid,
+                    "properties": ",".join(char.properties),
+                    "value": value,
+                }
+
             # end char
         # end service
 

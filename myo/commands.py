@@ -31,7 +31,13 @@ class SetMode(Command):
 
     @property
     def payload(self) -> bytearray:
-        return bytearray((self.emg_mode.value, self.imu_mode.value, self.classifier_mode.value))
+        return bytearray(
+            (
+                self.emg_mode.value,
+                self.imu_mode.value,
+                self.classifier_mode.value,
+            )
+        )
 
 
 # -> myohw_command_vibrate
