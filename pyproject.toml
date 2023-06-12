@@ -12,7 +12,7 @@ maintainers = [
 ]
 description = "A replacement middleware to MyoConnect for Myo Armband"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
     "aenum>=3.1.12",
     "bleak>=0.20.2",
@@ -25,7 +25,6 @@ classifiers = [
     "Intended Audience :: Education",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -45,8 +44,8 @@ source = "vcs"
 [tool.hatch.version.raw-options]
 version_scheme = "python-simplified-semver"
 local_scheme = "no-local-version"
-parentdir_prefix_version = "hatch-"
-git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "hatch-v*"]
+parentdir_prefix_version = "v"
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v*"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
