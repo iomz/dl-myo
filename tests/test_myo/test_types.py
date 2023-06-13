@@ -14,7 +14,7 @@ def load_cases(testdata_filename):
             self.blob = blob
             self.out = out
 
-    testfile = os.path.join(os.path.dirname(__file__), "data", testdata_filename)
+    testfile = os.path.join(os.path.dirname(__file__), "test_data", testdata_filename)
     logger.debug(f"loading {testfile}")
 
     cases = []

@@ -51,6 +51,13 @@ docker compose pull
 docker compose run --rm dl-myo
 ```
 
+## Build (requires [Poetry](https://python-poetry.org/)
+
+```bash
+poetry install
+poetry build
+```
+
 ## Author
 
 [@iomz](https://github.com/iomz) (Iori Mizutani)
