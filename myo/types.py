@@ -1,13 +1,17 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-type
 # myo/types.py
 # based on myo-bluetooth/myohw.h
-import aenum
 import json
 import struct
+
+import aenum
 
 
 class Constant(aenum.NamedConstant):
     ACCELEROMETER_SCALE = 2048.0
+    CCCD_NOTIFY = b"\x01\x00"
+    CCCD_INDICATE = b"\x02\x00"
+    CCCD_DISABLE = b"\x00\x00"
     DEFAULT_IMU_SAMPLE_RATE = 50
     EMG_DEFAULT_STREAMING_RATE = 200
     GYROSCOPE_SCALE = 16.0
@@ -24,17 +28,44 @@ class Arm(aenum.Enum):
 # -> myohw_classifier_event_t
 class ClassifierEvent:
     def __init__(self, data):
-        # TODO: fix union
-        u = struct.unpack("3B", data)
-        self.t = ClassifierEventType(u[0])
-        if self.t is ClassifierEventType.ARM_SYNCED:
-            self.arm = Arm(u[1])
-            self.x_direction = XDirection(u[2])
-        elif self.t is ClassifierEventType.POSE:
-            u = struct.unpack("1B2H", data)
-            self.pose = Pose(u[1])
-        elif self.t is ClassifierEventType.SYNC_FAILED:
-            self.sync_result = SyncResult(u[1])
+        # ClassifierEvent is a union
+        t = struct.unpack('<6B', data)[0]
+        self.t = ClassifierEventType(t)
+        if self.t == ClassifierEventType.ARM_SYNCED:
+            _, a, x, _, _, _ = struct.unpack("<6B", data)
+            self.arm = Arm(a)
+            self.x_direction = XDirection(x)
+        elif self.t == ClassifierEventType.POSE:
+            _, p, _, _, _ = struct.unpack("<BH3B", data)
+            self.pose = Pose(p)
+        elif self.t == ClassifierEventType.SYNC_FAILED:
+            _, s, _, _, _, _ = struct.unpack("<6B", data)
+            self.sync_result = SyncResult(s)
+
+    def __repr__(self):
+        if self.t == ClassifierEventType.ARM_SYNCED:
+            return str((self.t.value, self.arm.value + self.x_direction.value))
+        elif self.t == ClassifierEventType.POSE:
+            return str((self.t.value, self.pose.value))
+        elif self.t == ClassifierEventType.SYNC_FAILED:
+            return str((self.t.value, self.sync_result.value))
+        return str((self.t.value,))
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        if self.t == ClassifierEventType.ARM_SYNCED:
+            return {
+                "type": self.t.name,
+                "arm": self.arm.name,
+                "x-diraction": self.x_direction.name,
+            }
+        elif self.t == ClassifierEventType.POSE:
+            return {"type": self.t.name, "pose": self.pose.name}
+        elif self.t == ClassifierEventType.SYNC_FAILED:
+            return {"type": self.t.name, "sync-result": self.sync_result.name}
+        return {"type": self.t.name}
 
 
 # -> myohw_classifier_event_type_t
@@ -54,19 +85,18 @@ class ClassifierMode(aenum.Enum):
 
 
 # -> myohw_classifier_model_type_t
+# fmt: off
 class ClassifierModelType(aenum.Enum):
-    BUILTIN = 0
-    CUSTOM = 1
+    BUILTIN = 0  # Model built into the classifier package.
+    CUSTOM = 1   # Model based on personalized user data.
+# fmt: on
 
 
-# -> myohw_emg_data_t
+# -> myohw_emg_data_t (Raw EMG data received in a myohw_att_handle_emg_data_#)
 class EMGData:
     def __init__(self, data):
-        # TODO: check the endian
-        # u = struct.unpack("<16b", data)
-        u = struct.unpack("16b", data)
-        self.sample1 = u[:8]
-        self.sample2 = u[8:]
+        self.sample1 = struct.unpack("<8b", data[:8])
+        self.sample2 = struct.unpack("<8b", data[8:])
 
     def __str__(self):
         return str(self.sample1 + self.sample2)
@@ -78,17 +108,43 @@ class EMGData:
         return {"sample1": self.sample1, "sample2": self.sample2}
 
 
+# for the FV_DATA in the old firmware versions (?)
+# cf. https://github.com/dzhu/myo-raw/blob/6873d04d647702b304b0592ee25994d196659bb0/myo_raw.py#LL276C11-L276C11
+class FVData:
+    def __init__(self, data):
+        assert len(data) == 17
+        u = struct.unpack('<8Hb', data)
+        self.fv = u[:8]
+        self.mask = u[8]
+
+    def __repr__(self):
+        return str(self.fv + (self.mask,))
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"fv": self.fv, "mask": self.mask}
+
+
 # -> myohw_emg_mode_t
+# cf. https://github.com/dzhu/myo-raw/issues/17#issuecomment-913140042
+# fmt: off
 class EMGMode(aenum.Enum):
-    NONE = 0x00
-    SEND_EMG = 0x02
-    SEND_RAW = 0x03
+    NONE = 0x00      # Do not send EMG data.
+    SEND_FILT = 0x01 # Send bandpass-filtered && rectified EMG data.
+                     #  - This is a hidden mode in myohw.h.
+                     #  - See FVData for the interpolated type
+    SEND_EMG = 0x02  # Send filtered && unrectified EMG data.
+    SEND_RAW = 0x03  # Send unfiltered and unrectified EMG data.
+                     #  - The values are scaled between [-128,127]
+# fmt: on
 
 
 # -> myohw_fw_info_t
 class FirmwareInfo:
     def __init__(self, data):
-        u = struct.unpack("6BH12B", data)  # 20 bytes
+        u = struct.unpack("<6BH12B", data)  # 20 bytes
         assert len(u) == 19
         ser = list(u[:6])
         ser.reverse()
@@ -117,7 +173,7 @@ class FirmwareInfo:
 # -> myohw_fw_version_t
 class FirmwareVersion:
     def __init__(self, data):
-        u = struct.unpack("4H", data)  # 4x uint16_t
+        u = struct.unpack("<4H", data)  # 4x uint16_t
         self._major = u[0]
         self._minor = u[1]
         self._patch = u[2]
@@ -139,55 +195,92 @@ class HardwareRev(aenum.Enum):
 class IMUData:
     class Orientation:
         def __init__(self, w, x, y, z):
-            self.w = w
-            self.x = x
-            self.y = y
-            self.z = z
+            self.w = w / Constant.ORIENTATION_SCALE
+            self.x = x / Constant.ORIENTATION_SCALE
+            self.y = y / Constant.ORIENTATION_SCALE
+            self.z = z / Constant.ORIENTATION_SCALE
 
-        def __dict__(self):
+        def to_dict(self):
             return {"w": self.w, "x": self.x, "y": self.y, "z": self.z}
 
     def __init__(self, data):
         u = struct.unpack("<10h", data)
         self.orientation = self.Orientation(u[0], u[1], u[2], u[3])
-        self.accelerometer = u[4:7]
-        self.gyroscope = u[7:10]
-        # self.accel = Vector(*[i / float(self.Scale.ACCELEROMETER) for i in data[4:7]])
-        # self.gyro = Vector(*[i / float(self.Scale.GYROSCOPE) for i in data[7:]])
-        # self.quat = Quaternion(*[i / float(self.Scale.ORIENTATION) for i in data[:4]])
+        self.accelerometer = [v / Constant.ACCELEROMETER_SCALE for v in u[4:7]]
+        self.gyroscope = [v / Constant.GYROSCOPE_SCALE for v in u[7:10]]
+
+    def __repr__(self):
+        return str(
+            (
+                self.orientation.w,
+                self.orientation.x,
+                self.orientation.y,
+                self.orientation.z,
+                self.accelerometer,
+                self.gyroscope,
+            )
+        )
 
     def json(self):
-        return json.dumps(
-            {
-                "orientation": self.orientation.__dict__(),
-                "accelerometer": self.accelerometer,
-                "gyroscope": self.gyroscope,
-            }
-        )
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {
+            "orientation": self.orientation.to_dict(),
+            "accelerometer": self.accelerometer,
+            "gyroscope": self.gyroscope,
+        }
 
 
 # -> myohw_imu_mode_t
+# fmt: off
 class IMUMode(aenum.Enum):
-    NONE = 0x00
-    SEND_DATA = 0x01
-    SEND_EVENTS = 0x02
-    SEND_ALL = 0x03
-    SEND_RAW = 0x04
+    NONE = 0x00        # Do not send IMU data or events.
+    SEND_DATA = 0x01   # Send IMU data streams (accel, gyro, and orientation).
+    SEND_EVENTS = 0x02 # Send motion events detected by the IMU (e.g. taps).
+    SEND_ALL = 0x03    # Send both IMU data streams and motion events.
+    SEND_RAW = 0x04    # Send raw IMU data streams.
+# fmt: on
 
 
 # -> myohw_motion_event_t
 class MotionEvent:
     def __init__(self, data):
-        # TODO: fix union?
-        u = struct.unpack("3b", data)
-        self.t = MotionEventType(u[0])
-        self.tap_direction = u[1]
-        self.tap_count = u[2]
+        t, _, _ = struct.unpack("<3b", data)
+        self.t = MotionEventType(t)
+        # MotionEvent is a union
+        if self.t == MotionEventType.TAP:
+            _, td, tc = struct.unpack("<3b", data)
+            self.tap_direction = td
+            self.tap_count = tc
+
+    def __repr__(self):
+        if self.t == MotionEventType.TAP:
+            return str((self.t.value, self.tap_direction, self.tap_count))
+        else:
+            return str((self.t,))
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        if self.t == MotionEventType.TAP:
+            return {
+                "type": self.t.name,
+                "tap-direction": self.tap_direction,
+                "tap-count": self.tap_count,
+            }
+        else:
+            return {
+                "type": self.t.name,
+            }
 
 
 # -> myohw_motion_event_type_t
 class MotionEventType(aenum.Enum):
     TAP = 0x00
+    UNKNOWN1 = 0x01
+    UNKNOWN2 = 0x02
 
 
 # -> myohw_pose_t
