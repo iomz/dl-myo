@@ -6,6 +6,7 @@ import json
 import logging
 
 from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
@@ -52,9 +53,7 @@ class Device:
         self = cls()
         try:
             # scan the device
-            self.__device = await BleakScanner.find_device_by_filter(
-                match_myo_mac, cb=dict(use_bdaddr=True)
-            )
+            self.__device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
             if self.device is None:
                 logger.error(f"could not find device with address {mac}")
                 return self
@@ -76,9 +75,7 @@ class Device:
 
         self = cls()
         # scan the device
-        self.__device = await BleakScanner.find_device_by_filter(
-            match_myo_uuid, cb=dict(use_bdaddr=True)
-        )
+        self.__device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
         if self.device is None:
             logger.error(f"could not find device with service UUID {UUID.MYO_SERVICE}")
             return self

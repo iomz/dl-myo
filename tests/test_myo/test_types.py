@@ -1,7 +1,6 @@
 import csv
 import logging
 import os
-import struct
 import pytest
 from myo import ClassifierEvent, FVData, IMUData, MotionEvent
 

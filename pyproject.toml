@@ -109,9 +109,7 @@ bleak = "^0.20.2"
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 pytest = "^7.3.2"
-pytest-codecov = "^0.5.1"
 pytest-cov = "^4.1.0"
-requests = "^2.31.0"
 
 [tool.poetry-dynamic-versioning]
 enable = true
