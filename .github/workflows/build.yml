@@ -4,12 +4,19 @@ on:
   release:
     types: [published]
 jobs:
-  build-wheel:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Lint
+        uses: chartboost/ruff-action@v1
+  build:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
+        os: [macOS-latest, windows-latest, ubuntu-latest]
         python-version: ["3.10", "3.11"]
-        os: [macOS-latest, windows-latest]
+        poetry-version: ["1.5.1"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -17,25 +24,14 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Lint
-        uses: chartboost/ruff-action@v1
-      - name: Build
-        run: |
-          pip install hatch
-          python -m hatch build
-      - name: Upload wheel
-        uses: actions/upload-artifact@v3
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v2
         with:
-          name: dist
-          path: dist
-  build-wheel-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+          poetry-version: ${{ matrix.poetry-version }}
       - name: Build
         run: |
-          pip install hatch
-          python -m hatch build
+          poetry install
+          poetry build
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
