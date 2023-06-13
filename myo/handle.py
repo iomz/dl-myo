@@ -31,29 +31,31 @@ Services = {
 import aenum
 
 
+# fmt: off
 class Handle(aenum.Enum):
-    DEVICE_INFORMATION = 12
-    MANUFACTURER_NAME_STRING = 13
-    BATTERY_SERVICE = 15
-    BATTERY_LEVEL = 16
-    CONTROL_SERVICE = 19
-    FIRMWARE_INFO = 20
-    FIRMWARE_VERSION = 22
-    COMMAND = 24
-    IMU_SERVICE = 26
-    IMU_DATA = 27
-    MOTION_EVENT = 30
-    CLASSIFIER_SERVICE = 33
-    CLASSIFIER_EVENT = 34
-    FV_SERVICE = 37
-    FV_DATA = 38
-    EMG_SERVICE = 41
-    EMG0_DATA = 42
-    EMG1_DATA = 45
-    EMG2_DATA = 48
-    EMG3_DATA = 51
-    UNKNOWN_SERVICE = 54
-    UNKNOWN_CHAR = 55
+    DEVICE_INFORMATION = 12 # 0x0c
+    MANUFACTURER_NAME_STRING = 13  # 0x0d
+    BATTERY_SERVICE = 15    # 0x0f
+    BATTERY_LEVEL = 16      # 0x10
+    CONTROL_SERVICE = 19    # 0x13
+    FIRMWARE_INFO = 20      # 0x14
+    FIRMWARE_VERSION = 22   # 0x16
+    COMMAND = 24            # 0x18
+    IMU_SERVICE = 26        # 0x1a
+    IMU_DATA = 27           # 0x1b
+    MOTION_EVENT = 30       # 0x1e
+    CLASSIFIER_SERVICE = 33 # 0x21
+    CLASSIFIER_EVENT = 34   # 0x22
+    FV_SERVICE = 37         # 0x25: EMG Filtered Value Service
+    FV_DATA = 38            # 0x26: EMG Filtered Value Data
+    EMG_SERVICE = 41        # 0x29
+    EMG0_DATA = 42          # 0x2a
+    EMG1_DATA = 45          # 0x2d
+    EMG2_DATA = 48          # 0x30
+    EMG3_DATA = 51          # 0x33
+    UNKNOWN_SERVICE = 54    # 0x36
+    UNKNOWN_CHAR = 55       # 0x37
+# fmt: on
 
 
 class UUID:

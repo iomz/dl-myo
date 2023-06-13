@@ -107,15 +107,9 @@ class Device:
         """
         await self.command(client, DeepSleep())
 
-    async def emg_service(self, client):
-        """
-        EMG Service
-        """
-        await client.write_gatt_char(Handle.EMG_SERVICE.value, b"\x01\x00", True)
-
     async def get_services(self, client: BleakClient, indent=2) -> str:
         """fetch available services as dict"""
-        sd = {"services": {}}
+        sd = {}
         for service in client.services:  # BleakGATTServiceCollection
             try:
                 service_name = Handle(service.handle).name
@@ -123,43 +117,20 @@ class Device:
                 logger.debug("unknown handle: {}", e)
                 continue
 
-            sd["services"][service.handle] = {
-                "name": service_name,
-                "uuid": service.uuid,
-                "chars": {},
-            }
+            chars = {}
             for char in service.characteristics:  # List[BleakGATTCharacteristic]
-                try:
-                    char_name = Handle(char.handle).name
-                except Exception as e:
-                    logger.debug("unknown handle: {}", e)
-                    continue
-
-                value = None
-                if "read" in char.properties:
-                    blob = await client.read_gatt_char(char.handle)
-                    if char_name == Handle.MANUFACTURER_NAME_STRING.name:
-                        value = blob.decode("utf-8")
-                    elif char_name == Handle.FIRMWARE_INFO.name:
-                        value = FirmwareInfo(blob).to_dict()
-                    elif char_name == Handle.FIRMWARE_VERSION.name:
-                        value = str(FirmwareVersion(blob))
-                    elif char_name == Handle.BATTERY_LEVEL.name:
-                        value = ord(blob)
-                    else:
-                        value = binascii.b2a_hex(blob).decode("utf-8")
-
-                sd["services"][service.handle]["chars"][char.handle] = {
-                    "name": char_name,
-                    "uuid": char.uuid,
-                    "properties": ",".join(char.properties),
-                    "value": value,
-                }
+                cd = await gatt_char_to_dict(client, char)
+                if cd:
+                    chars[hex(char.handle)] = cd
 
             # end char
+            sd[hex(service.handle)] = {
+                "name": service_name,
+                "uuid": service.uuid,
+                "chars": chars,
+            }
         # end service
-
-        return json.dumps(sd, indent=indent)
+        return json.dumps({"services": sd}, indent=indent)
 
     async def led(self, client: BleakClient, *args):
         """
@@ -214,3 +185,40 @@ class Device:
         Vibrate2 Command
         """
         await self.command(client, Vibrate2(duration, strength))
+
+    async def write(self, client, handle, value):
+        """
+        Write characteristic
+        """
+        await client.write_gatt_char(handle, value, True)
+
+
+async def gatt_char_to_dict(client: BleakClient, char: BleakGATTCharacteristic):
+    try:
+        char_name = Handle(char.handle).name
+    except Exception as e:
+        logger.debug("unknown handle: {}", e)
+        return None
+
+    cd = {
+        "name": char_name,
+        "uuid": char.uuid,
+        "properties": ",".join(char.properties),
+    }
+    value = None
+    if "read" in char.properties:
+        blob = await client.read_gatt_char(char.handle)
+        if char_name == Handle.MANUFACTURER_NAME_STRING.name:
+            value = blob.decode("utf-8")
+        elif char_name == Handle.FIRMWARE_INFO.name:
+            value = FirmwareInfo(blob).to_dict()
+        elif char_name == Handle.FIRMWARE_VERSION.name:
+            value = str(FirmwareVersion(blob))
+        elif char_name == Handle.BATTERY_LEVEL.name:
+            value = ord(blob)
+        else:
+            value = binascii.b2a_hex(blob).decode("utf-8")
+
+    if value:
+        cd["value"] = value
+    return cd
