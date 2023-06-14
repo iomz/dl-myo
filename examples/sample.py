@@ -5,92 +5,92 @@ import argparse
 import asyncio
 import logging
 
-from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 
-import myo
+from myo import Myo
+from myo.handle import Handle
+from myo.types import (
+    ClassifierEvent,
+    ClassifierMode,
+    EMGData,
+    EMGMode,
+    FVData,
+    IMUData,
+    IMUMode,
+    MotionEvent,
+    SleepMode,
+    VibrationType,
+)
 
 
 def callback(sender: BleakGATTCharacteristic, data: bytearray):
-    name = myo.Handle(sender.handle).name
-    if name == myo.Handle.IMU_DATA.name:
-        logging.info(f"{name}: {myo.IMUData(data).json()}")
-    elif name == myo.Handle.FV_DATA.name:
-        fvd = myo.FVData(data)
-        logging.info(f"{name}: [{fvd.mask}] {fvd.fv}")
-    elif name == myo.Handle.CLASSIFIER_EVENT.name:
-        logging.info(f"{name}: {myo.ClassifierEvent(data).json()}")
-    elif name == myo.Handle.MOTION_EVENT.name:
-        logging.info(f"{name}: {myo.MotionEvent(data).json()}")
+    handle = Handle(sender.handle)
+    if handle == Handle.IMU_DATA:
+        logging.info(f"{handle.name}: {IMUData(data).json()}")
+    elif handle == Handle.FV_DATA:
+        logging.info(f"{handle.name}: {FVData(data).json()}")
+    elif handle == Handle.CLASSIFIER_EVENT:
+        logging.info(f"{handle.name}: {ClassifierEvent(data).json()}")
+    elif handle == Handle.MOTION_EVENT:
+        logging.info(f"{handle.name}: {MotionEvent(data).json()}")
     else:
-        logging.info(f"{name}: {data}")
+        logging.info(f"{handle.name}: {EMGData(data).json()}")
 
 
 async def main(args: argparse.Namespace):
     logging.info("scanning for a Myo device...")
 
-    if args.mac and len(args.mac) != 0:
-        m = await myo.Device.with_mac(args.mac)
-    else:
-        m = await myo.Device.with_uuid()
+    m = None
+    while m is None:
+        if args.mac and len(args.mac) != 0:
+            m = await Myo.with_mac(args.mac)
+        else:
+            m = await Myo.with_uuid()
 
-    if m.device is None:
-        return
+    logging.info(f"{m.device.name}: {m.device.address}")
+    await m.set_sleep_mode(SleepMode.NORMAL)
+    # led red
+    await m.led([255, 0, 0], [255, 0, 0])
+    await m.vibrate(VibrationType.SHORT)
+    # led green
+    await m.led([0, 255, 0], [0, 255, 0])
+    await m.vibrate(VibrationType.SHORT)
+    # led cyan
+    await m.led([0, 255, 255], [0, 255, 255])
 
-    logging.info(f"{m.name}: {m.device.address}")
-    async with BleakClient(m.device) as client:
-        logging.info(f"connected to the Myo device {m.device.address}")
-        await m.set_sleep_mode(client, myo.SleepMode.NORMAL)
-        # led red
-        await m.led(client, [255, 0, 0], [255, 0, 0])
-        await m.vibrate(client, myo.VibrationType.SHORT)
-        await asyncio.sleep(0.1)
-        # led green
-        await m.led(client, [0, 255, 0], [0, 255, 0])
-        await m.vibrate(client, myo.VibrationType.SHORT)
-        await asyncio.sleep(0.1)
-        # led cyan
-        await m.led(client, [0, 255, 255], [0, 255, 255])
+    # enable emg and imu
+    await m.set_mode(
+        EMGMode.SEND_FILT,
+        IMUMode.SEND_ALL,
+        ClassifierMode.ENABLED,
+    )
 
-        # enable emg and imu
-        await m.set_mode(
-            client,
-            myo.EMGMode.SEND_FILT,
-            myo.IMUMode.SEND_ALL,
-            myo.ClassifierMode.ENABLED,
-        )
+    await m.vibrate(VibrationType.MEDIUM)
 
-        await m.vibrate(client, myo.VibrationType.MEDIUM)
+    await m.client.start_notify(Handle.FV_DATA.value, callback)
+    await m.client.start_notify(Handle.IMU_DATA.value, callback)
+    await m.client.start_notify(Handle.MOTION_EVENT.value, callback)
+    await m.client.start_notify(Handle.CLASSIFIER_EVENT.value, callback)
 
-        # await client.start_notify(myo.Handle.EMG0_DATA.value, callback)
-        # await client.start_notify(myo.Handle.EMG1_DATA.value, callback)
-        # await client.start_notify(myo.Handle.EMG2_DATA.value, callback)
-        # await client.start_notify(myo.Handle.EMG3_DATA.value, callback)
-        await client.start_notify(myo.Handle.FV_DATA.value, callback)
-        await client.start_notify(myo.Handle.IMU_DATA.value, callback)
-        await client.start_notify(myo.Handle.MOTION_EVENT.value, callback)
-        await client.start_notify(myo.Handle.CLASSIFIER_EVENT.value, callback)
+    # receive notifications for 5 seconds
+    await asyncio.sleep(5)
 
-        # receive notifications for 3 seconds
-        await asyncio.sleep(3)
+    # disable emg and imu
+    await m.set_mode(
+        EMGMode.NONE,
+        IMUMode.NONE,
+        ClassifierMode.DISABLED,
+    )
 
-        # disable emg and imu
-        await m.set_mode(
-            client,
-            myo.EMGMode.NONE,
-            myo.IMUMode.NONE,
-            myo.ClassifierMode.DISABLED,
-        )
-
-        # get the available services on the myo device
-        info = await m.get_services(client)
-        logging.info(info)
-
-        # led purple
-        await m.led(client, [100, 100, 100], [100, 100, 100])
-        await m.vibrate(client, myo.VibrationType.LONG)
+    # get the available services on the myo device
+    info = await m.get_services()
+    logging.info(info)
 
     logging.info("bye bye!")
+    # led purple
+    await m.led([100, 100, 100], [100, 100, 100])
+    await m.vibrate(VibrationType.LONG)
+    await m.disconnect()
 
 
 if __name__ == "__main__":
@@ -103,7 +103,6 @@ if __name__ == "__main__":
         help="sets the log level to debug",
     )
     parser.add_argument(
-        "-m",
         "--mac",
         default="",
         help="the mac address to connect to",

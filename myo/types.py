@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-type
+"""
 # myo/types.py
-# based on myo-bluetooth/myohw.h
+#
+# type reflection from myo-bluetooth/myohw.h
+#
+"""
 import json
 import struct
 
@@ -131,13 +135,13 @@ class FVData:
 # cf. https://github.com/dzhu/myo-raw/issues/17#issuecomment-913140042
 # fmt: off
 class EMGMode(aenum.Enum):
-    NONE = 0x00      # Do not send EMG data.
-    SEND_FILT = 0x01 # Send bandpass-filtered && rectified EMG data.
-                     #  - This is a hidden mode in myohw.h.
-                     #  - See FVData for the interpolated type
-    SEND_EMG = 0x02  # Send filtered && unrectified EMG data.
-    SEND_RAW = 0x03  # Send unfiltered and unrectified EMG data.
-                     #  - The values are scaled between [-128,127]
+    NONE = 0x00       # Do not send EMG data.
+    SEND_FILT = 0x01  # Send bandpass-filtered && rectified EMG data.
+    # noqa            #  - This is a hidden mode in myohw.h.
+    # noqa            #  - See FVData for the interpolated type
+    SEND_EMG = 0x02   # Send filtered && unrectified EMG data.
+    SEND_RAW = 0x03   # Send unfiltered and unrectified EMG data.
+    # noqa                  #  - The values are scaled between [-128,127]
 # fmt: on
 
 
@@ -235,11 +239,11 @@ class IMUData:
 # -> myohw_imu_mode_t
 # fmt: off
 class IMUMode(aenum.Enum):
-    NONE = 0x00        # Do not send IMU data or events.
-    SEND_DATA = 0x01   # Send IMU data streams (accel, gyro, and orientation).
-    SEND_EVENTS = 0x02 # Send motion events detected by the IMU (e.g. taps).
-    SEND_ALL = 0x03    # Send both IMU data streams and motion events.
-    SEND_RAW = 0x04    # Send raw IMU data streams.
+    NONE = 0x00         # Do not send IMU data or events.
+    SEND_DATA = 0x01    # Send IMU data streams (accel, gyro, and orientation).
+    SEND_EVENTS = 0x02  # Send motion events detected by the IMU (e.g. taps).
+    SEND_ALL = 0x03     # Send both IMU data streams and motion events.
+    SEND_RAW = 0x04     # Send raw IMU data streams.
 # fmt: on
 
 

@@ -2,7 +2,7 @@ import csv
 import logging
 import os
 import pytest
-from myo import ClassifierEvent, FVData, IMUData, MotionEvent
+from myo.types import ClassifierEvent, FVData, IMUData, MotionEvent
 
 logger = logging.getLogger(__name__)
 
