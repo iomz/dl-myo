@@ -4,57 +4,35 @@
 #
 # reflection from myo-bluetooth/myohw.h
 # the names are slightly different in dl-myo
-Services = {
-    # core service
-    0x0001: "ControlService",
-    0x0101: "MyoInfoCharacteristic",
-    0x0201: "FirmwareVersionCharacteristic ",
-    0x0401: "CommandCharacteristic",
-    # imu service
-    0x0002: "ImuDataService",
-    0x0402: "ImuDataCharacteristic",
-    0x0502: "MotionEventCharacteristic",
-    0x0003: "ClassifierService",
-    0x0103: "ClassifierEventCharacteristic",
-    # emg service
-    0x0005: "EmgDataService",
-    0x0105: "EmgData0Characteristic",
-    0x0205: "EmgData1Characteristic",
-    0x0305: "EmgData2Characteristic",
-    0x0405: "EmgData3Characteristic",
-    # standard bluetooh device service
-    0x180F: "BatteryService",
-    0x2A19: "BatteryLevelCharacteristic",
-    0x2A00: "DeviceName",
-}
+#
 """
 import aenum
 
 
 # fmt: off
 class Handle(aenum.Enum):
-    DEVICE_INFORMATION = 12 # 0x0c
+    DEVICE_INFORMATION = 12  # 0x0c
     MANUFACTURER_NAME_STRING = 13  # 0x0d
-    BATTERY_SERVICE = 15    # 0x0f
-    BATTERY_LEVEL = 16      # 0x10
-    CONTROL_SERVICE = 19    # 0x13
-    FIRMWARE_INFO = 20      # 0x14
-    FIRMWARE_VERSION = 22   # 0x16
-    COMMAND = 24            # 0x18
-    IMU_SERVICE = 26        # 0x1a
-    IMU_DATA = 27           # 0x1b
-    MOTION_EVENT = 30       # 0x1e
-    CLASSIFIER_SERVICE = 33 # 0x21
-    CLASSIFIER_EVENT = 34   # 0x22
-    FV_SERVICE = 37         # 0x25: EMG Filtered Value Service
-    FV_DATA = 38            # 0x26: EMG Filtered Value Data
-    EMG_SERVICE = 41        # 0x29
-    EMG0_DATA = 42          # 0x2a
-    EMG1_DATA = 45          # 0x2d
-    EMG2_DATA = 48          # 0x30
-    EMG3_DATA = 51          # 0x33
-    UNKNOWN_SERVICE = 54    # 0x36
-    UNKNOWN_CHAR = 55       # 0x37
+    BATTERY_SERVICE = 15     # 0x0f
+    BATTERY_LEVEL = 16       # 0x10
+    CONTROL_SERVICE = 19     # 0x13
+    FIRMWARE_INFO = 20       # 0x14
+    FIRMWARE_VERSION = 22    # 0x16
+    COMMAND = 24             # 0x18
+    IMU_SERVICE = 26         # 0x1a
+    IMU_DATA = 27            # 0x1b
+    MOTION_EVENT = 30        # 0x1e
+    CLASSIFIER_SERVICE = 33  # 0x21
+    CLASSIFIER_EVENT = 34    # 0x22
+    FV_SERVICE = 37          # 0x25: EMG Filtered Value Service
+    FV_DATA = 38             # 0x26: EMG Filtered Value Data
+    EMG_SERVICE = 41         # 0x29
+    EMG0_DATA = 42           # 0x2a
+    EMG1_DATA = 45           # 0x2d
+    EMG2_DATA = 48           # 0x30
+    EMG3_DATA = 51           # 0x33
+    UNKNOWN_SERVICE = 54     # 0x36
+    UNKNOWN_CHAR = 55        # 0x37
 # fmt: on
 
 
