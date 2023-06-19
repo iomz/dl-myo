@@ -28,7 +28,7 @@ from .version import __version__
 
 __author__ = "Iori Mizutani"
 __copyright__ = "Copyright (c) 2023 Iori Mizutani"
-__email__ = "iori.mizutani@gmail.com"
+__email__ = "iomz@sazanka.io"
 __license__ = "GPLv3"
 __summary__ = "Yet another MyoConnect alternative without dongles"
 __uri__ = "https://github.com/iomz/dl-myo"
