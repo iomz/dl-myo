@@ -1,4 +1,6 @@
 FROM python:3.11.3-bullseye
+LABEL org.opencontainers.image.source = "https://github.com/iomz/dl-myo"
+LABEL maintainer="iomz@sazanka.io"
 
 ARG BUILD_DEPS=" \
     bluez \
@@ -15,9 +17,8 @@ RUN apt-get autoremove -yqq --purge \
 RUN pip install --upgrade pip
 RUN pip install dl-myo
 
-COPY examples/sample.py /app/
+COPY examples/sample_client.py /app/
 
 WORKDIR /app
-RUN chmod +x sample.py
 
-ENTRYPOINT ["/app/sample.py"]
+ENTRYPOINT ["/app/sample_client.py"]

@@ -1,10 +1,10 @@
 [project]
 name = "dl-myo"
 authors = [
-  { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
+  { name="Iori Mizutani", email="iomz@sazanka.io" },
 ]
 maintainers = [
-  { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
+  { name="Iori Mizutani", email="iomz@sazanka.io" },
 ]
 description = "Yet another MyoConnect alternative without dongles"
 readme = "README.md"
@@ -83,9 +83,12 @@ max-complexity = 10
 
 [tool.coverage.run]
 branch = true
-
-[tool.coverage.paths]
-tests = ["tests"]
+omit = [
+  # omit the __init__.py
+  "myo/__init__.py",
+  "myo/constants.py",
+  "myo/version.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -98,7 +101,7 @@ exclude_lines = [
 name = "dl-myo"
 version = "0.0.0"
 description = "Yet another MyoConnect alternative without dongles"
-authors = ["Iori Mizutani <iori.mizutani@gmail.com>"]
+authors = ["Iori Mizutani <iomz@sazanka.io>"]
 license = "GPLv3"
 readme = "README.md"
 packages = [{include = "myo"}]
