@@ -7,6 +7,7 @@ permissions:
 jobs:
   release:
     env:
+      python-version: "3.11"
       poetry-version: "1.5.1"
     runs-on: ubuntu-latest
     permissions:
@@ -16,6 +17,10 @@ jobs:
       url: https://pypi.org/p/dl-myo
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Python ${{ env.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.python-version }}
       - name: Set up Poetry
         uses: abatilo/actions-poetry@v2
         with:

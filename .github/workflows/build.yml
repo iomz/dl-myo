@@ -1,8 +1,9 @@
 name: build
 on:
-  pull_request:
-  release:
-    types: [published]
+  pull_request: []
+  push:
+    branches:
+      - main
 jobs:
   ruff:
     runs-on: ubuntu-latest
