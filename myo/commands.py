@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+"""
+    myo.commands
+    ------------
+    The available commands derived from myohw.h
+"""
+
 from .types import SleepMode, UnlockType, UserActionType
 
 

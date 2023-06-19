@@ -6,7 +6,7 @@ authors = [
 maintainers = [
   { name="Iori Mizutani", email="iori.mizutani@gmail.com" },
 ]
-description = "A replacement middleware to MyoConnect for Myo Armband"
+description = "Yet another MyoConnect alternative without dongles"
 readme = "README.md"
 classifiers = [
     "Environment :: Console",
@@ -23,6 +23,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Human Machine Interfaces",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dynamic = ["version"]
 
 [project.urls]
 "Homepage" = "https://github.com/iomz/dl-myo"
@@ -68,7 +69,7 @@ exclude = [
 line-length = 120
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-# Assume Python 3.10.
+# Assume Python 3.11.
 target-version = "py311"
 
 [tool.ruff.mccabe]
@@ -78,6 +79,7 @@ max-complexity = 10
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+"myo/__init__.py" = ["F401"]
 
 [tool.coverage.run]
 branch = true
@@ -95,7 +97,7 @@ exclude_lines = [
 [tool.poetry]
 name = "dl-myo"
 version = "0.0.0"
-description = "A replacement middleware to MyoConnect for Myo Armband"
+description = "Yet another MyoConnect alternative without dongles"
 authors = ["Iori Mizutani <iori.mizutani@gmail.com>"]
 license = "GPLv3"
 readme = "README.md"

@@ -30,6 +30,7 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Build
         run: |
+          poetry env use ${{ matrix.python-version }}
           poetry install --no-interaction
           poetry build
       - name: Upload wheel
