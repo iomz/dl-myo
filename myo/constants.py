@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-type
+"""
+# myo/constants.py
+#
+# some utility constants
+#
+"""
+ACCELEROMETER_SCALE = 2048.0
+CCCD_NOTIFY = b"\x01\x00"
+CCCD_INDICATE = b"\x02\x00"
+CCCD_DISABLE = b"\x00\x00"
+DEFAULT_IMU_SAMPLE_RATE = 50
+EMG_DEFAULT_STREAMING_RATE = 200
+GYROSCOPE_SCALE = 16.0
+ORIENTATION_SCALE = 16384.0
+RGB_BLACK = [0, 0, 0]
+RGB_BLUE = [0, 0, 255]
+RGB_CYAN = [0, 255, 255]
+RGB_GREEN = [0, 255, 0]
+RGB_PINK = [255, 0, 255]
+RGB_RED = [255, 0, 0]
+RGB_YELLOW = [255, 255, 0]
+RGB_WHITE = [255, 255, 255]

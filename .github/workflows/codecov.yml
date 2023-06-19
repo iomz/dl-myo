@@ -8,27 +8,18 @@ on:
       - main
 jobs:
   pytest:
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.11"]
-        poetry-version: ["1.5.1"]
-    runs-on: ${{ matrix.os }}
+    env:
+      poetry-version: "1.5.1"
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Set up Poetry ${{ matrix.poetry-version }}
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        run: |
-          poetry install --no-interaction
+        run: poetry install --no-interaction
       - name: Run tests and collect coverage
         run: poetry run pytest --cov=. --cov-report=xml
       - name: Upload coverage reports to Codecov

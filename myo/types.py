@@ -1,28 +1,22 @@
-# -*- coding: utf-8 -*-type
 """
-# myo/types.py
-#
-# type reflection from myo-bluetooth/myohw.h
-#
+    myo.types
+    ------------
+    Type reflections from myo-bluetooth/myohw.h
 """
+
+
 import json
 import struct
 
 import aenum
 
-
-class Constant(aenum.NamedConstant):
-    ACCELEROMETER_SCALE = 2048.0
-    CCCD_NOTIFY = b"\x01\x00"
-    CCCD_INDICATE = b"\x02\x00"
-    CCCD_DISABLE = b"\x00\x00"
-    DEFAULT_IMU_SAMPLE_RATE = 50
-    EMG_DEFAULT_STREAMING_RATE = 200
-    GYROSCOPE_SCALE = 16.0
-    ORIENTATION_SCALE = 16384.0
+from .constants import (
+    ACCELEROMETER_SCALE,
+    GYROSCOPE_SCALE,
+    ORIENTATION_SCALE,
+)
 
 
-# -> myohw_arm_t
 class Arm(aenum.Enum):
     RIGHT = 0x01
     LEFT = 0x02
@@ -116,7 +110,6 @@ class EMGData:
 # cf. https://github.com/dzhu/myo-raw/blob/6873d04d647702b304b0592ee25994d196659bb0/myo_raw.py#LL276C11-L276C11
 class FVData:
     def __init__(self, data):
-        assert len(data) == 17
         u = struct.unpack('<8Hb', data)
         self.fv = u[:8]
         self.mask = u[8]
@@ -149,7 +142,6 @@ class EMGMode(aenum.Enum):
 class FirmwareInfo:
     def __init__(self, data):
         u = struct.unpack("<6BH12B", data)  # 20 bytes
-        assert len(u) == 19
         ser = list(u[:6])
         ser.reverse()
         ser = [hex(i)[-2:] for i in ser]
@@ -199,10 +191,10 @@ class HardwareRev(aenum.Enum):
 class IMUData:
     class Orientation:
         def __init__(self, w, x, y, z):
-            self.w = w / Constant.ORIENTATION_SCALE
-            self.x = x / Constant.ORIENTATION_SCALE
-            self.y = y / Constant.ORIENTATION_SCALE
-            self.z = z / Constant.ORIENTATION_SCALE
+            self.w = w / ORIENTATION_SCALE
+            self.x = x / ORIENTATION_SCALE
+            self.y = y / ORIENTATION_SCALE
+            self.z = z / ORIENTATION_SCALE
 
         def to_dict(self):
             return {"w": self.w, "x": self.x, "y": self.y, "z": self.z}
@@ -210,8 +202,8 @@ class IMUData:
     def __init__(self, data):
         u = struct.unpack("<10h", data)
         self.orientation = self.Orientation(u[0], u[1], u[2], u[3])
-        self.accelerometer = [v / Constant.ACCELEROMETER_SCALE for v in u[4:7]]
-        self.gyroscope = [v / Constant.GYROSCOPE_SCALE for v in u[7:10]]
+        self.accelerometer = [v / ACCELEROMETER_SCALE for v in u[4:7]]
+        self.gyroscope = [v / GYROSCOPE_SCALE for v in u[7:10]]
 
     def __repr__(self):
         return str(

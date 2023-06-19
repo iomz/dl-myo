@@ -1,11 +1,3 @@
-# This workflow will upload a Python Package using Twine when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: pypi
 on:
   release:
@@ -14,33 +6,24 @@ permissions:
   contents: read
 jobs:
   release:
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.11"]
-        poetry-version: ["1.5.1"]
-    runs-on: ${{ matrix.os }}
+    env:
+      poetry-version: "1.5.1"
+    runs-on: ubuntu-latest
     permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
     environment:
       name: pypi
       url: https://pypi.org/p/dl-myo
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Set up Poetry
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: ${{ matrix.poetry-version }}
+          poetry-version: ${{ env.poetry-version }}
       - name: Build
         run: |
           poetry self add "poetry-dynamic-versioning[plugin]"
-          poetry install
+          poetry install --no-interaction
           poetry build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

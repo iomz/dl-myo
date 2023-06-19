@@ -4,7 +4,7 @@
 import argparse
 import asyncio
 import json
-import readline  # noqa: F401
+import readline  # noqa
 
 import websockets
 
@@ -20,9 +20,7 @@ async def main():
         help="the host IP address for msgpack server",
         default="127.0.0.1",
     )
-    parser.add_argument(
-        "--port", "-p", help="the port for msgpack listener", default=8765
-    )
+    parser.add_argument("--port", "-p", help="the port for msgpack listener", default=8765)
 
     args = parser.parse_args()
 
