@@ -15,7 +15,7 @@ from .constants import (
     RGB_CYAN,
     RGB_PINK,
     RGB_YELLOW,
-    RGB_WHITE,
+    RGB_GREEN,
 )
 from .core import Myo
 from .profile import Handle
@@ -166,6 +166,7 @@ class MyoClient:
         <> invoke the on_* callbacks
         """
         handle = Handle(sender.handle)
+        logger.debug(f"notify_callback ({handle}): {data}")
         if handle == Handle.CLASSIFIER_EVENT:
             await self.on_classifier_event(ClassifierEvent(data))
         elif handle == Handle.FV_DATA:
@@ -192,9 +193,9 @@ class MyoClient:
 
     async def setup(
         self,
+        classifier_mode=ClassifierMode.DISABLED,
         emg_mode=EMGMode.SEND_FILT,
         imu_mode=IMUMode.NONE,
-        classifier_mode=ClassifierMode.DISABLED,
     ):
         """
         <> setup the myo device
@@ -281,7 +282,7 @@ class MyoClient:
         if self.classifier_mode == ClassifierMode.ENABLED:
             await self.stop_notify(Handle.CLASSIFIER_EVENT.value)
 
-        await self.led(RGB_WHITE)
+        await self.led(RGB_GREEN)
         logger.info(f"stopped notification from {self.device.name}")
 
     async def stop_notify(self, handle):
