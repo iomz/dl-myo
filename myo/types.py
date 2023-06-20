@@ -7,8 +7,8 @@
 
 import json
 import struct
+from enum import Enum
 
-import aenum
 
 from .constants import (
     ACCELEROMETER_SCALE,
@@ -17,7 +17,7 @@ from .constants import (
 )
 
 
-class Arm(aenum.Enum):
+class Arm(Enum):
     RIGHT = 0x01
     LEFT = 0x02
     UNKNOWN = 0xFF
@@ -67,7 +67,7 @@ class ClassifierEvent:
 
 
 # -> myohw_classifier_event_type_t
-class ClassifierEventType(aenum.Enum):
+class ClassifierEventType(Enum):
     ARM_SYNCED = 0x01
     ARM_UNSYNCED = 0x02
     POSE = 0x03
@@ -77,14 +77,14 @@ class ClassifierEventType(aenum.Enum):
 
 
 # -> myohw_classifier_mode_t
-class ClassifierMode(aenum.Enum):
+class ClassifierMode(Enum):
     DISABLED = 0x00
     ENABLED = 0x01
 
 
 # -> myohw_classifier_model_type_t
 # fmt: off
-class ClassifierModelType(aenum.Enum):
+class ClassifierModelType(Enum):
     BUILTIN = 0  # Model built into the classifier package.
     CUSTOM = 1   # Model based on personalized user data.
 # fmt: on
@@ -127,7 +127,7 @@ class FVData:
 # -> myohw_emg_mode_t
 # cf. https://github.com/dzhu/myo-raw/issues/17#issuecomment-913140042
 # fmt: off
-class EMGMode(aenum.Enum):
+class EMGMode(Enum):
     NONE = 0x00       # Do not send EMG data.
     SEND_FILT = 0x01  # Send bandpass-filtered && rectified EMG data.
     # noqa            #  - This is a hidden mode in myohw.h.
@@ -180,7 +180,7 @@ class FirmwareVersion:
 
 
 # -> myohw_hardware_rev_t
-class HardwareRev(aenum.Enum):
+class HardwareRev(Enum):
     UNKNOWN = 0
     REVC = 1
     REVD = 2
@@ -230,7 +230,7 @@ class IMUData:
 
 # -> myohw_imu_mode_t
 # fmt: off
-class IMUMode(aenum.Enum):
+class IMUMode(Enum):
     NONE = 0x00         # Do not send IMU data or events.
     SEND_DATA = 0x01    # Send IMU data streams (accel, gyro, and orientation).
     SEND_EVENTS = 0x02  # Send motion events detected by the IMU (e.g. taps).
@@ -273,14 +273,14 @@ class MotionEvent:
 
 
 # -> myohw_motion_event_type_t
-class MotionEventType(aenum.Enum):
+class MotionEventType(Enum):
     TAP = 0x00
     UNKNOWN1 = 0x01
     UNKNOWN2 = 0x02
 
 
 # -> myohw_pose_t
-class Pose(aenum.Enum):
+class Pose(Enum):
     REST = 0x0000
     FIST = 0x0001
     WAVE_IN = 0x0002
@@ -291,37 +291,37 @@ class Pose(aenum.Enum):
 
 
 # -> myohw_sku_t
-class SKU(aenum.Enum):
+class SKU(Enum):
     UNKNOWN = 0
     BLACK = 1
     WHITE = 2
 
 
 # -> myohw_sleep_mode_t
-class SleepMode(aenum.Enum):
+class SleepMode(Enum):
     NORMAL = 0
     NEVER_SLEEP = 1
 
 
 # -> myohw_sync_result_t
-class SyncResult(aenum.Enum):
+class SyncResult(Enum):
     FAILED_TOO_HARD = 0x01
 
 
 # -> myohw_unlock_type_t
-class UnlockType(aenum.Enum):
+class UnlockType(Enum):
     LOCK = 0x00
     TIMED = 0x01
     HOLD = 0x02
 
 
 # -> myohw_user_action_type_t
-class UserActionType(aenum.Enum):
+class UserActionType(Enum):
     SINGLE = 0
 
 
 # -> myohw_vibration_type_t
-class VibrationType(aenum.Enum):
+class VibrationType(Enum):
     NONE = 0x00
     SHORT = 0x01
     MEDIUM = 0x02
@@ -329,7 +329,7 @@ class VibrationType(aenum.Enum):
 
 
 # -> myohw_x_direction_t
-class XDirection(aenum.Enum):
+class XDirection(Enum):
     TOWARD_WRIST = 0x01
     TOWARD_ELBOW = 0x02
     DIRECTION_UNKNOWN = 0xFF
