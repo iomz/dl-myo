@@ -83,12 +83,7 @@ max-complexity = 10
 
 [tool.coverage.run]
 branch = true
-omit = [
-  # omit the __init__.py
-  "myo/__init__.py",
-  "myo/constants.py",
-  "myo/version.py",
-]
+omit = []
 
 [tool.coverage.report]
 exclude_lines = [
