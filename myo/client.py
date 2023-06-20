@@ -98,7 +98,7 @@ class MyoClient:
         self._client = None
         logger.info(f"disconnected from {self.device.name}")
 
-    def emg_data_aggregate(self, handle, emg_data: EMGData):
+    async def emg_data_aggregate(self, handle, emg_data: EMGData):
         """
         <> aggregate the raw EMG data channels
         """
@@ -108,8 +108,8 @@ class MyoClient:
             Handle.EMG2_DATA,
             Handle.EMG3_DATA,
         ]:
-            self.on_emg_data(emg_data.sample1)
-            self.on_emg_data(emg_data.sample2)
+            await self.on_emg_data(emg_data.sample1)
+            await self.on_emg_data(emg_data.sample2)
 
     async def get_services(self, indent=1) -> str:
         """
@@ -146,36 +146,36 @@ class MyoClient:
         """
         await self.m.led(self._client, color, color)
 
-    def on_classifier_event(self, ce: ClassifierEvent):
+    async def on_classifier_event(self, ce: ClassifierEvent):
         raise NotImplementedError()
 
-    def on_emg_data(self, emg):  # data: list of 8 8-bit unsigned short
+    async def on_emg_data(self, emg):  # data: list of 8 8-bit unsigned short
         raise NotImplementedError()
 
-    def on_fv_data(self, fvd: FVData):
+    async def on_fv_data(self, fvd: FVData):
         raise NotImplementedError()
 
-    def on_imu_data(self, imu: IMUData):
+    async def on_imu_data(self, imu: IMUData):
         raise NotImplementedError()
 
-    def on_motion_event(self, me: MotionEvent):
+    async def on_motion_event(self, me: MotionEvent):
         raise NotImplementedError()
 
-    def notify_callback(self, sender: BleakGATTCharacteristic, data: bytearray):
+    async def notify_callback(self, sender: BleakGATTCharacteristic, data: bytearray):
         """
         <> invoke the on_* callbacks
         """
         handle = Handle(sender.handle)
         if handle == Handle.CLASSIFIER_EVENT:
-            self.on_classifier_event(ClassifierEvent(data))
+            await self.on_classifier_event(ClassifierEvent(data))
         elif handle == Handle.FV_DATA:
-            self.on_fv_data(FVData(data))
+            await self.on_fv_data(FVData(data))
         elif handle == Handle.IMU_DATA:
-            self.on_imu_data(IMUData(data))
+            await self.on_imu_data(IMUData(data))
         elif handle == Handle.MOTION_EVENT:
-            self.on_motion_event(MotionEvent(data))
+            await self.on_motion_event(MotionEvent(data))
         else:  # on EMG[0-3]_DATA handle
-            self.emg_data_aggregate(handle, EMGData(data))
+            await self.emg_data_aggregate(handle, EMGData(data))
 
     async def set_mode(self, emg_mode, imu_mode, classifier_mode):
         """

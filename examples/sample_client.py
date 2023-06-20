@@ -15,7 +15,7 @@ from myo.constants import RGB_BLACK
 
 
 class SampleClient(MyoClient):
-    def on_fv_data(self, fvd: FVData):
+    async def on_fv_data(self, fvd: FVData):
         logging.info(f"{Handle.FV_DATA.name}: {fvd.json()}")
 
 
