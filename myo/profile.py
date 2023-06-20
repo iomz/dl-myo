@@ -4,7 +4,7 @@
     GATTProfile is deducted from the GATT profile
     while Handle is the cleaned-up version used in dl-myo
 """
-import aenum
+from enum import Enum
 
 
 class GATTProfile:
@@ -98,7 +98,7 @@ class GATTProfile:
 
 
 # fmt: off
-class Handle(aenum.Enum):
+class Handle(Enum):
     DEVICE_INFORMATION = 12  # 0x0c
     MANUFACTURER_NAME_STRING = 13  # 0x0d
     BATTERY_SERVICE = 15     # 0x0f

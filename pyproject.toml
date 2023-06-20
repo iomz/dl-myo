@@ -103,7 +103,6 @@ packages = [{include = "myo"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-aenum = "^3.1.12"
 bleak = "^0.20.2"
 
 [tool.poetry.group.dev.dependencies]

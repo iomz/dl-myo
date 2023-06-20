@@ -5,18 +5,35 @@ import argparse
 import asyncio
 import logging
 
-from myo import (
+from myo import MyoClient
+from myo.types import (
+    ClassifierEvent,
+    ClassifierMode,
+    EMGMode,
     FVData,
-    Handle,
-    MyoClient,
+    IMUData,
+    IMUMode,
+    MotionEvent,
     VibrationType,
 )
-from myo.constants import RGB_BLACK
+from myo.constants import RGB_PINK
 
 
 class SampleClient(MyoClient):
+    async def on_classifier_event(self, ce: ClassifierEvent):
+        logging.info(ce.json())
+
+    async def on_emg_data(self, emg):  # data: list of 8 8-bit unsigned short
+        logging.info(emg)
+
     async def on_fv_data(self, fvd: FVData):
-        logging.info(f"{Handle.FV_DATA.name}: {fvd.json()}")
+        logging.info(fvd.json())
+
+    async def on_imu_data(self, imu: IMUData):
+        logging.info(imu.json())
+
+    async def on_motion_event(self, me: MotionEvent):
+        logging.info(me.json())
 
 
 async def main(args: argparse.Namespace):
@@ -29,7 +46,11 @@ async def main(args: argparse.Namespace):
     logging.info(info)
 
     # setup the MyoClient
-    await sc.setup()
+    await sc.setup(
+        classifier_mode=ClassifierMode.ENABLED,
+        emg_mode=EMGMode.SEND_FILT,
+        imu_mode=IMUMode.SEND_EVENTS,
+    )
 
     # start the indicate/notify
     await sc.start()
@@ -42,7 +63,7 @@ async def main(args: argparse.Namespace):
 
     logging.info("bye bye!")
     await sc.vibrate(VibrationType.LONG)
-    await sc.led(RGB_BLACK)
+    await sc.led(RGB_PINK)
     await sc.disconnect()
 
 
@@ -65,10 +86,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
-
     logging.basicConfig(
         level=log_level,
         format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
     )
-    logging.getLogger("myo").setLevel(level=log_level)
+    # logging.getLogger("bleak.*").setLevel(level=log_level)
+
     asyncio.run(main(args))

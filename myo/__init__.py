@@ -19,6 +19,7 @@ from .types import (
     IMUData,
     IMUMode,
     MotionEvent,
+    MotionEventType,
     SleepMode,
     UnlockType,
     UserActionType,
