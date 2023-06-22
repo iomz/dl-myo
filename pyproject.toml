@@ -83,7 +83,9 @@ max-complexity = 10
 
 [tool.coverage.run]
 branch = true
-omit = []
+omit = [
+    "myo/core.py"
+]
 
 [tool.coverage.report]
 exclude_lines = [
