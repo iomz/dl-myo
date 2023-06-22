@@ -9,6 +9,7 @@ from myo import MyoClient
 from myo.types import (
     ClassifierEvent,
     ClassifierMode,
+    EMGData,
     EMGMode,
     FVData,
     IMUData,
@@ -23,7 +24,7 @@ class SampleClient(MyoClient):
     async def on_classifier_event(self, ce: ClassifierEvent):
         logging.info(ce.json())
 
-    async def on_emg_data(self, emg):  # data: list of 8 8-bit unsigned short
+    async def on_emg_data(self, emg: EMGData):
         logging.info(emg)
 
     async def on_fv_data(self, fvd: FVData):
@@ -90,6 +91,5 @@ if __name__ == "__main__":
         level=log_level,
         format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
     )
-    # logging.getLogger("bleak.*").setLevel(level=log_level)
 
     asyncio.run(main(args))

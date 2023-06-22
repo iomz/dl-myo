@@ -5,8 +5,7 @@
 """
 from __future__ import absolute_import, annotations
 
-from .client import MyoClient
-from .core import Myo
+from .core import Myo, MyoClient
 from .profile import Handle
 from .types import (
     ClassifierEvent,
