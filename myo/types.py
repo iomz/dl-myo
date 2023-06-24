@@ -68,18 +68,19 @@ class ClassifierEvent:
 
 # -> myohw_classifier_event_type_t
 class ClassifierEventType(Enum):
-    ARM_SYNCED = 0x01
-    ARM_UNSYNCED = 0x02
-    POSE = 0x03
-    UNLOCKED = 0x04
-    LOCKED = 0x05
-    SYNC_FAILED = 0x06
+    ARM_SYNCED = 1
+    ARM_UNSYNCED = 2
+    POSE = 3
+    UNLOCKED = 4
+    LOCKED = 5
+    SYNC_FAILED = 6
+    UNKNOWN = 7
 
 
 # -> myohw_classifier_mode_t
 class ClassifierMode(Enum):
-    DISABLED = 0x00
-    ENABLED = 0x01
+    DISABLED = 0
+    ENABLED = 1
 
 
 # -> myohw_classifier_model_type_t
@@ -128,13 +129,13 @@ class FVData:
 # cf. https://github.com/dzhu/myo-raw/issues/17#issuecomment-913140042
 # fmt: off
 class EMGMode(Enum):
-    NONE = 0x00       # Do not send EMG data.
-    SEND_FILT = 0x01  # Send bandpass-filtered && rectified EMG data.
-    # noqa            #  - This is a hidden mode in myohw.h.
-    # noqa            #  - See FVData for the interpolated type
-    SEND_EMG = 0x02   # Send filtered && unrectified EMG data.
-    SEND_RAW = 0x03   # Send unfiltered and unrectified EMG data.
-    # noqa                  #  - The values are scaled between [-128,127]
+    NONE = 0       # Do not send EMG data.
+    SEND_FILT = 1  # Send bandpass-filtered && rectified EMG data.
+    # noqa         #  - This is a hidden mode in myohw.h.
+    # noqa         #  - See FVData for the interpolated type
+    SEND_EMG = 2   # Send filtered && unrectified EMG data.
+    SEND_RAW = 3   # Send unfiltered and unrectified EMG data.
+    # noqa         #  - The values are scaled between [-128,127]
 # fmt: on
 
 
@@ -231,11 +232,11 @@ class IMUData:
 # -> myohw_imu_mode_t
 # fmt: off
 class IMUMode(Enum):
-    NONE = 0x00         # Do not send IMU data or events.
-    SEND_DATA = 0x01    # Send IMU data streams (accel, gyro, and orientation).
-    SEND_EVENTS = 0x02  # Send motion events detected by the IMU (e.g. taps).
-    SEND_ALL = 0x03     # Send both IMU data streams and motion events.
-    SEND_RAW = 0x04     # Send raw IMU data streams.
+    NONE = 0         # Do not send IMU data or events.
+    SEND_DATA = 1    # Send IMU data streams (accel, gyro, and orientation).
+    SEND_EVENTS = 2  # Send motion events detected by the IMU (e.g. taps).
+    SEND_ALL = 3     # Send both IMU data streams and motion events.
+    SEND_RAW = 4     # Send raw IMU data streams.
 # fmt: on
 
 
@@ -274,9 +275,9 @@ class MotionEvent:
 
 # -> myohw_motion_event_type_t
 class MotionEventType(Enum):
-    TAP = 0x00
-    UNKNOWN1 = 0x01
-    UNKNOWN2 = 0x02
+    TAP = 0
+    UNKNOWN1 = 1
+    UNKNOWN2 = 2
 
 
 # -> myohw_pose_t
@@ -305,14 +306,14 @@ class SleepMode(Enum):
 
 # -> myohw_sync_result_t
 class SyncResult(Enum):
-    FAILED_TOO_HARD = 0x01
+    FAILED_TOO_HARD = 1
 
 
 # -> myohw_unlock_type_t
 class UnlockType(Enum):
-    LOCK = 0x00
-    TIMED = 0x01
-    HOLD = 0x02
+    LOCK = 0
+    TIMED = 1
+    HOLD = 2
 
 
 # -> myohw_user_action_type_t
@@ -322,10 +323,10 @@ class UserActionType(Enum):
 
 # -> myohw_vibration_type_t
 class VibrationType(Enum):
-    NONE = 0x00
-    SHORT = 0x01
-    MEDIUM = 0x02
-    LONG = 0x03
+    NONE = 0
+    SHORT = 1
+    MEDIUM = 2
+    LONG = 3
 
 
 # -> myohw_x_direction_t
