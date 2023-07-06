@@ -20,7 +20,9 @@ See [`myo/profile.py`](https://github.com/iomz/dl-myo/blob/main/myo/profile.py) 
 - [Features](#features)
 - [Platform Support](#platform-support)
 - [Install](#install)
-- [Example](#example)
+- [Examples](#examples)
+  - [`sample_client.py`](#sample_clientpy)
+  - [influxdb](#influxdb)
   - [Try the example with Docker](#try-the-example-with-docker)
 - [Build with Poetry](#build-with-poetry)
 - [Credits](#credits)
@@ -49,7 +51,9 @@ Compared to other Myo libraries/SDKs:
 pip install dl-myo
 ```
 
-## Example
+## Examples
+
+### `sample_client.py`
 
 The script scans a Myo device, connect to the device, prints the GATT profile from the device, collect EMG data for 5 seconds, and then disconnect.
 
@@ -65,7 +69,28 @@ Otherwise, you can also bind to a specific MAC address. For example,
 python examples/sample_client.py --mac D2:3B:85:94:32:8E
 ```
 
+### influxdb
+
+The `examples/influxdb/influx_client.py` emits datapoints to be stored in InfluxDB.
+The `docker-compose.yml` lanches the required database for this by default.
+
+```bash
+docker compose up -d influxdb
+```
+
+then
+
+```bash
+python examples/influxdb/influx_client.py
+```
+
+Make use of the dashboard config `examples/influxdb/myo.json`.
+
+<img width="80%" alt="influxdb" src="https://github.com/iomz/dl-myo/assets/26181/8c5d79f4-f5d8-4e9e-8cab-d5e959972d06">
+
 ### Try the example with Docker
+
+NOTE: The docker example currently doesn't work on macOS.
 
 ```bash
 docker compose pull
