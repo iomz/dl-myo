@@ -1,0 +1,5 @@
+[default]
+  url = "http://localhost:8086"
+  token = "super-secret-auth-token"
+  org = "dl-myo"
+  active = true

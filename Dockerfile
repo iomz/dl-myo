@@ -15,10 +15,10 @@ RUN apt-get autoremove -yqq --purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN pip install --upgrade pip
-RUN pip install dl-myo
+RUN pip install dl-myo "influxdb-client[ciso]"
 
-COPY examples/sample_client.py /app/
+COPY examples/influx_client.py /app/
 
 WORKDIR /app
 
-ENTRYPOINT ["/app/sample_client.py"]
+ENTRYPOINT ["/app/influx_client.py"]

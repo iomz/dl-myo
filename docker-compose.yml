@@ -8,5 +8,19 @@ services:
     privileged: true
     volumes:
       - /var/run/dbus/:/var/run/dbus/:z
-    # for macOS, see https://github.com/zbentley/dbus-osx-examples/blob/master/installation/README.md
-    #- /opt/homebrew/opt/dbus:/var/run/dbus/:z
+  influxdb:
+    image: influxdb:2.7.1
+    container_name: influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=myo
+      - DOCKER_INFLUXDB_INIT_PASSWORD=super-secret
+      - DOCKER_INFLUXDB_INIT_ORG=dl-myo
+      - DOCKER_INFLUXDB_INIT_BUCKET=myo
+      - DOCKER_INFLUXDB_INIT_RETENTION=1w
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=super-secret-auth-token
+    volumes:
+      - $PWD/examples/influxdb/data:/var/lib/influxdb2
+      - $PWD/examples/influxdb/config:/etc/influxdb2
+    ports:
+      - 8086:8086
