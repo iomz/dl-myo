@@ -18,7 +18,7 @@ from bleak.backends.scanner import AdvertisementData
 from .constants import (
     RGB_CYAN,
     RGB_PINK,
-    RGB_YELLOW,
+    RGB_ORANGE,
     RGB_GREEN,
 )
 from .commands import (
@@ -348,7 +348,7 @@ class MyoClient:
         """
         <> setup the myo device
         """
-        await self.led(RGB_YELLOW)
+        await self.led(RGB_ORANGE)
         logger.info(f"setting up the myo: {self.device.name}")
         battery = await self.m.battery_level(self._client)
         logger.info(f"remaining battery: {battery} %")
