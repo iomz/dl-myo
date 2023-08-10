@@ -143,12 +143,7 @@ class Myo:
         """
         Command Characteristic
         """
-        try:
-            await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
-        except AttributeError:
-            # wait a bit and try once again
-            await asyncio.sleep(0.1)
-            await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
+        await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
 
     async def deep_sleep(self, client: BleakClient):
         """
@@ -241,6 +236,7 @@ class MyoClient:
         self._client = None
         self.fv_aggregated = None  # for aggregate_all
         self.imu_aggregated = None  # for aggregate_all
+        self._lock = asyncio.Lock()  # for aggregate_all
 
     @classmethod
     async def with_device(cls, mac=None, aggregate_all=False, aggregate_emg=False):
@@ -337,15 +333,16 @@ class MyoClient:
         """
         <> for on_aggregated_data: data is either FVData or IMUData
         """
-        if isinstance(data, FVData):
-            self.fv_aggregated = data
-        elif isinstance(data, IMUData):
-            self.imu_aggregated = data
-        # trigger on_aggregated_data when both FVData and IMUData are ready
-        if all((self.fv_aggregated, self.imu_aggregated)):
-            await self.on_aggregated_data(AggregatedData(self.fv_aggregated, self.imu_aggregated))
-            self.fv_aggregated = None
-            self.imu_aggregated = None
+        async with self._lock:
+            if isinstance(data, FVData):
+                self.fv_aggregated = data
+            elif isinstance(data, IMUData):
+                self.imu_aggregated = data
+            # trigger on_aggregated_data when both FVData and IMUData are ready
+            if all(d is not None for d in (self.fv_aggregated, self.imu_aggregated)):
+                await self.on_aggregated_data(AggregatedData(self.fv_aggregated, self.imu_aggregated))
+                self.fv_aggregated = None
+                self.imu_aggregated = None
 
     async def on_aggregated_data(self, ad: AggregatedData):
         """
