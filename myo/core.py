@@ -55,6 +55,37 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
+# this is a custom data type for fv and imu
+class AggregatedData:
+    def __init__(self, fvd: FVData, imu: IMUData):
+        self.fvd = fvd
+        self.imu = imu
+
+    def __str__(self):
+        return f"{repr(self.fvd)},{repr(self.imu)}"
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"fvd": self.fvd.to_dict(), "imu": self.imu.to_dict()}
+
+
+# this is just one sample in EMGData
+class EMGDataSingle:
+    def __init__(self, data):
+        self.data = data
+
+    def __str__(self):
+        return str(self.data)
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"data": self.data}
+
+
 class Myo:
     __slots__ = "_device"
 
@@ -137,12 +168,25 @@ class Myo:
 
         await self.command(client, LED(args[0], args[1]))
 
-    async def set_mode(self, client: BleakClient, emg_mode, imu_mode, classifier_mode):
+    async def set_mode(
+        self,
+        client: BleakClient,
+        classifier_mode: ClassifierMode,
+        emg_mode: EMGMode,
+        imu_mode: IMUMode,
+    ):
         """
         Set Mode Command
             - configures EMG, IMU, and Classifier modes
         """
-        await self.command(client, SetMode(emg_mode, imu_mode, classifier_mode))
+        await self.command(
+            client,
+            SetMode(
+                classifier_mode=classifier_mode,
+                emg_mode=emg_mode,
+                imu_mode=imu_mode,
+            ),
+        )
 
     async def set_sleep_mode(self, client: BleakClient, sleep_mode):
         """
@@ -182,17 +226,20 @@ class Myo:
 
 
 class MyoClient:
-    def __init__(self):
+    def __init__(self, aggregate_all=False, aggregate_emg=False):
         self.m = None
-        self.aggregate_emg = False
+        self.aggregate_all = aggregate_all
+        self.aggregate_emg = aggregate_emg
         self.classifier_mode = None
         self.emg_mode = None
         self.imu_mode = None
         self._client = None
+        self.fv_aggregated = None  # for aggregate_all
+        self.imu_aggregated = None  # for aggregate_all
 
     @classmethod
-    async def with_device(cls, mac=None):
-        self = cls()
+    async def with_device(cls, mac=None, aggregate_all=False, aggregate_emg=False):
+        self = cls(aggregate_all=aggregate_all, aggregate_emg=aggregate_emg)
         while self.m is None:
             if mac and mac != "":
                 self.m = await Myo.with_mac(mac)
@@ -281,10 +328,32 @@ class MyoClient:
     async def on_classifier_event(self, ce: ClassifierEvent):
         raise NotImplementedError()
 
+    async def on_data(self, data):
+        """
+        for on_aggregated_data
+        data is either FVData or IMUData
+        """
+        if isinstance(data, FVData):
+            self.fv_aggregated = data
+        elif isinstance(data, IMUData):
+            self.imu_aggregated = data
+        # trigger on_aggregated_data when both FVData and IMUData are ready
+        if all((self.fv_aggregated, self.imu_aggregated)):
+            await self.on_aggregated_data(AggregatedData(self.fv_aggregated, self.imu_aggregated))
+            self.fv_aggregated = None
+            self.imu_aggregated = None
+
+    async def on_aggregated_data(self, ad: AggregatedData):
+        """
+        on_aggregated_data is invoked when both FVData and IMUData are ready.
+        it doesn't support EMGData since it is collected at different interval (200HZ instead of 50Hz)
+        """
+        raise NotImplementedError()
+
     async def on_emg_data(self, emg: EMGData):  # data: list of 8 8-bit unsigned short
         raise NotImplementedError()
 
-    async def on_emg_data_aggregated(self, data):
+    async def on_emg_data_aggregated(self, eds: EMGDataSingle):
         """
         <> aggregate the raw EMG data channels
         """
@@ -303,14 +372,21 @@ class MyoClient:
         """
         <> invoke the on_* callbacks
         """
+
         handle = Handle(sender.handle)
         logger.debug(f"notify_callback ({handle}): {data}")
         if handle == Handle.CLASSIFIER_EVENT:
             await self.on_classifier_event(ClassifierEvent(data))
         elif handle == Handle.FV_DATA:
-            await self.on_fv_data(FVData(data))
+            if self.aggregate_all:
+                await self.on_data(FVData(data))
+            else:
+                await self.on_fv_data(FVData(data))
         elif handle == Handle.IMU_DATA:
-            await self.on_imu_data(IMUData(data))
+            if self.aggregate_all:
+                await self.on_data(IMUData(data))
+            else:
+                await self.on_imu_data(IMUData(data))
         elif handle == Handle.MOTION_EVENT:
             await self.on_motion_event(MotionEvent(data))
         elif handle in [
@@ -321,17 +397,22 @@ class MyoClient:
         ]:
             emg = EMGData(data)
             if self.aggregate_emg:
-                await self.on_emg_data_aggregated(emg.sample1)
-                await self.on_emg_data_aggregated(emg.sample2)
+                await self.on_emg_data_aggregated(EMGDataSingle(emg.sample1))
+                await self.on_emg_data_aggregated(EMGDataSingle(emg.sample2))
             else:
                 await self.on_emg_data(emg)
 
-    async def set_mode(self, emg_mode, imu_mode, classifier_mode):
+    async def set_mode(self, classifier_mode: ClassifierMode, emg_mode: EMGMode, imu_mode: IMUMode):
         """
         Set Mode Command
             - configures EMG, IMU, and Classifier modes
         """
-        await self.m.set_mode(self._client, emg_mode, imu_mode, classifier_mode)
+        await self.m.set_mode(
+            client=self._client,
+            classifier_mode=classifier_mode,
+            emg_mode=emg_mode,
+            imu_mode=imu_mode,
+        )
 
     async def set_sleep_mode(self, sleep_mode):
         """
@@ -362,10 +443,18 @@ class MyoClient:
         self.emg_mode = emg_mode
         self.imu_mode = imu_mode
         self.classifier_mode = classifier_mode
+
+        # enforce the modes when aggregate_all
+        if self.aggregate_all and (
+            self.emg_mode != EMGMode.SEND_FILT or self.imu_mode in (IMUMode.NONE, IMUMode.SEND_EVENTS, IMUMode.SEND_RAW)
+        ):
+            self.emg_mode = EMGMode.SEND_FILT
+            self.imu_mode = IMUMode.SEND_ALL
+
         await self.set_mode(
-            emg_mode,
-            imu_mode,
-            classifier_mode,
+            classifier_mode=self.classifier_mode,
+            emg_mode=self.emg_mode,
+            imu_mode=self.imu_mode,
         )
         await self.led(RGB_PINK)
 

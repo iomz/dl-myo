@@ -285,7 +285,7 @@ class Pose(Enum):
     REST = 0x0000
     FIST = 0x0001
     WAVE_IN = 0x0002
-    WAVE_OUT = 0x003
+    WAVE_OUT = 0x0003
     FINGERS_SPREAD = 0x0004
     DOUBLE_TAP = 0x0005
     UNKNOWN = 0xFFFF

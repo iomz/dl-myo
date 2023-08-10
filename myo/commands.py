@@ -29,13 +29,16 @@ class Command:
 class SetMode(Command):
     cmd = 0x01
 
-    def __init__(self, emg_mode, imu_mode, classifier_mode):
+    def __init__(self, classifier_mode, emg_mode, imu_mode):
+        self.classifier_mode = classifier_mode
         self.emg_mode = emg_mode
         self.imu_mode = imu_mode
-        self.classifier_mode = classifier_mode
 
     @property
     def payload(self) -> bytearray:
+        """
+        notice that the payload requires the bytearray in this order
+        """
         return bytearray(
             (
                 self.emg_mode.value,
