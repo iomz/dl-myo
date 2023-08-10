@@ -26,7 +26,7 @@ class SampleClient(MyoClient):
         pass
 
     async def on_aggregated_data(self, ad: AggregatedData):
-        logging.info(ad.json())
+        logging.info(ad)
 
     async def on_emg_data(self, emg: EMGData):
         # logging.info(emg)

@@ -197,6 +197,9 @@ class IMUData:
             self.y = y / ORIENTATION_SCALE
             self.z = z / ORIENTATION_SCALE
 
+        def __str__(self):
+            return f"{self.w},{self.x},{self.y},{self.z}"
+
         def to_dict(self):
             return {"w": self.w, "x": self.x, "y": self.y, "z": self.z}
 
@@ -217,6 +220,9 @@ class IMUData:
                 self.gyroscope,
             )
         )
+
+    def __str__(self):
+        return f"{self.orientation},{','.join(map(str, self.accelerometer))},{','.join(map(str, self.gyroscope))}"
 
     def json(self):
         return json.dumps(self.to_dict())

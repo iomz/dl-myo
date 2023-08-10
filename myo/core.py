@@ -62,7 +62,7 @@ class AggregatedData:
         self.imu = imu
 
     def __str__(self):
-        return f"{repr(self.fvd)},{repr(self.imu)}"
+        return f"{','.join(map(str, self.fvd.fv))},{self.imu}"
 
     def json(self):
         return json.dumps(self.to_dict())
