@@ -5,7 +5,12 @@
 """
 from __future__ import absolute_import, annotations
 
-from .core import Myo, MyoClient
+from .core import (
+    AggregatedData,
+    EMGDataSingle,
+    Myo,
+    MyoClient,
+)
 from .profile import Handle
 from .types import (
     ClassifierEvent,
