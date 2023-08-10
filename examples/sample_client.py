@@ -64,7 +64,7 @@ async def main(args: argparse.Namespace):
     await sc.start()
 
     # receive notifications for 5 seconds
-    await asyncio.sleep(5)
+    await asyncio.sleep(args.seconds)
 
     # stop the indicate/notify
     await sc.stop()
@@ -89,6 +89,13 @@ if __name__ == "__main__":
         default="",
         help="the mac address to connect to",
         metavar="<mac-address>",
+    )
+    parser.add_argument(
+        "--seconds",
+        default=10,
+        help="seconds to read data",
+        metavar="<seconds>",
+        type=int,
     )
 
     args = parser.parse_args()

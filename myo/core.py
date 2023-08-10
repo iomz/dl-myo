@@ -441,16 +441,15 @@ class MyoClient:
         # never sleep
         await self.set_sleep_mode(SleepMode.NEVER_SLEEP)
         # setup modes
-        self.emg_mode = emg_mode
-        self.imu_mode = imu_mode
-        self.classifier_mode = classifier_mode
-
-        # enforce the modes when aggregate_all
-        if self.aggregate_all and (
-            self.emg_mode != EMGMode.SEND_FILT or self.imu_mode in (IMUMode.NONE, IMUMode.SEND_EVENTS, IMUMode.SEND_RAW)
-        ):
+        if self.aggregate_all:
+            # enforce the modes when aggregate_all
+            self.classifier_mode = ClassifierMode.DISABLED
             self.emg_mode = EMGMode.SEND_FILT
-            self.imu_mode = IMUMode.SEND_ALL
+            self.imu_mode = IMUMode.SEND_DATA
+        else:
+            self.classifier_mode = classifier_mode
+            self.emg_mode = emg_mode
+            self.imu_mode = imu_mode
 
         await self.set_mode(
             classifier_mode=self.classifier_mode,
