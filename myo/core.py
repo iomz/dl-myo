@@ -143,7 +143,12 @@ class Myo:
         """
         Command Characteristic
         """
-        await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
+        try:
+            await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
+        except AttributeError:
+            # wait a bit and try once again
+            await asyncio.sleep(0.1)
+            await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
 
     async def deep_sleep(self, client: BleakClient):
         """
@@ -330,8 +335,7 @@ class MyoClient:
 
     async def on_data(self, data):
         """
-        for on_aggregated_data
-        data is either FVData or IMUData
+        <> for on_aggregated_data: data is either FVData or IMUData
         """
         if isinstance(data, FVData):
             self.fv_aggregated = data
@@ -345,8 +349,8 @@ class MyoClient:
 
     async def on_aggregated_data(self, ad: AggregatedData):
         """
-        on_aggregated_data is invoked when both FVData and IMUData are ready.
-        it doesn't support EMGData since it is collected at different interval (200HZ instead of 50Hz)
+        <> on_aggregated_data is invoked when both FVData and IMUData are ready
+           it doesn't support EMGData since it is collected at different interval (200HZ instead of 50Hz)
         """
         raise NotImplementedError()
 
@@ -504,6 +508,7 @@ class MyoClient:
         # vibrate short*2
         await self.vibrate(VibrationType.SHORT)
         await self.vibrate(VibrationType.SHORT)
+
         # unsubscribe from notify/indicate
         if self.emg_mode in [EMGMode.SEND_EMG, EMGMode.SEND_RAW]:
             await self.stop_notify(Handle.EMG0_DATA.value)
