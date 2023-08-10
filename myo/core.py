@@ -40,6 +40,7 @@ from .types import (
     ClassifierEvent,
     ClassifierMode,
     EMGData,
+    EMGDataSingle,
     EMGMode,
     FVData,
     FirmwareInfo,
@@ -284,7 +285,7 @@ class MyoClient:
     async def on_emg_data(self, emg: EMGData):  # data: list of 8 8-bit unsigned short
         raise NotImplementedError()
 
-    async def on_emg_data_aggregated(self, data):
+    async def on_emg_data_aggregated(self, eds: EMGDataSingle):
         """
         <> aggregate the raw EMG data channels
         """
@@ -321,8 +322,8 @@ class MyoClient:
         ]:
             emg = EMGData(data)
             if self.aggregate_emg:
-                await self.on_emg_data_aggregated(emg.sample1)
-                await self.on_emg_data_aggregated(emg.sample2)
+                await self.on_emg_data_aggregated(EMGDataSingle(emg.sample1))
+                await self.on_emg_data_aggregated(EMGDataSingle(emg.sample2))
             else:
                 await self.on_emg_data(emg)
 

@@ -107,6 +107,21 @@ class EMGData:
         return {"sample1": self.sample1, "sample2": self.sample2}
 
 
+# this is just one sample in EMGData
+class EMGDataSingle:
+    def __init__(self, data):
+        self.data = data
+
+    def __str__(self):
+        return str(self.data)
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"data": self.data}
+
+
 # for the FV_DATA in the old firmware versions (?)
 # cf. https://github.com/dzhu/myo-raw/blob/6873d04d647702b304b0592ee25994d196659bb0/myo_raw.py#LL276C11-L276C11
 class FVData:
@@ -285,7 +300,7 @@ class Pose(Enum):
     REST = 0x0000
     FIST = 0x0001
     WAVE_IN = 0x0002
-    WAVE_OUT = 0x003
+    WAVE_OUT = 0x0003
     FINGERS_SPREAD = 0x0004
     DOUBLE_TAP = 0x0005
     UNKNOWN = 0xFFFF
