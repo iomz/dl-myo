@@ -210,7 +210,10 @@ class Myo:
         """
         Vibrate Command
         """
-        await self.command(client, Vibrate(vibration_type))
+        try:
+            await self.command(client, Vibrate(vibration_type))
+        except AttributeError:
+            logger.debug(f"Myo.vibrate() raised AttributeError, BleakClient.is_connected: {client.is_connected}")
 
     async def vibrate2(self, client: BleakClient, duration, strength):
         """
@@ -501,10 +504,6 @@ class MyoClient:
         """
         <> stop notify/indicate
         """
-        # vibrate short*2
-        await self.vibrate(VibrationType.SHORT)
-        await self.vibrate(VibrationType.SHORT)
-
         # unsubscribe from notify/indicate
         if self.emg_mode in [EMGMode.SEND_EMG, EMGMode.SEND_RAW]:
             await self.stop_notify(Handle.EMG0_DATA.value)
@@ -519,6 +518,13 @@ class MyoClient:
             await self.stop_notify(Handle.MOTION_EVENT.value)
         if self.classifier_mode == ClassifierMode.ENABLED:
             await self.stop_notify(Handle.CLASSIFIER_EVENT.value)
+
+        # vibrate short*2
+        try:
+            await self.vibrate(VibrationType.SHORT)
+            await self.vibrate(VibrationType.SHORT)
+        except AttributeError:
+            await asyncio.sleep(0.1)
 
         await self.led(RGB_GREEN)
         logger.info(f"stopped notification from {self.device.name}")
