@@ -68,8 +68,7 @@ class AggregatedData:
         return json.dumps(self.to_dict())
 
     def to_dict(self):
-        return {"fvd": self.fvd.to_dict(), "imu": self.imu.to_dict()}  
-
+        return {"fvd": self.fvd.to_dict(), "imu": self.imu.to_dict()}
 
 
 # this is just one sample in EMGData

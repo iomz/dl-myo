@@ -4,30 +4,42 @@
 import argparse
 import asyncio
 import logging
+import serial
+import time
 
 from myo import AggregatedData, MyoClient
 from myo.types import (
-    ClassifierEvent,
-    ClassifierMode,
-    EMGData,
-    EMGMode,
-    FVData,
-    IMUData,
-    IMUMode,
-    MotionEvent,
-    VibrationType,
+   ClassifierEvent,
+   ClassifierMode,
+   EMGData,
+   EMGMode,
+   FVData,
+   IMUData,
+   IMUMode,
+   MotionEvent,
+   VibrationType,
 )
 from myo.constants import RGB_PINK
 import pandas as pd
 import numpy as np
-# from csv_logger import CsvLogger
-import matplotlib.pyplot as plt
+import ydf
+from scipy import stats
+
+global model
+model = ydf.load_model("model_03_21_2024") #load RDF model
+
 
 global df
+global classification_arr
+classification_arr = np.zeros(25) #keeps array of 25 latest classifications. Mode of array is final output. Helps
+                                  #filter out misclassifications.
 
 df = pd.DataFrame(columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
                            'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13', 'channel 14', 'channel 15',
                            'channel 16','channel 17','channel 18'])
+
+arduino = serial.Serial(port='COM16',   baudrate=115200, timeout=0.1,write_timeout = 0.0)
+
 
 class SampleClient(MyoClient):
 
@@ -46,35 +58,74 @@ class SampleClient(MyoClient):
         pass
 
     async def on_aggregated_data(self, ad: AggregatedData):
-        # logging.info(ad)
-        #
-        print(2)
+        logging.info(ad)
+        global model
         global df
+        global classification_arr
+
         string = str(ad)
         array = string.split(',')
-        array = np.array(array).reshape(1,18)
-        print(array)
-        try:
-            df = df.append(pd.DataFrame(array, columns=df.columns), ignore_index=False)
-        except:
-            df = pd.DataFrame(array)
+        array = np.array(array).reshape(1, 18)
+        df = pd.DataFrame(array,columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
+                           'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13',
+                           'channel 14', 'channel 15',
+                           'channel 16', 'channel 17', 'channel 18'])
+        df = df.iloc[:, : 8]
+        # print(df)
+        prediction = model.predict(df)
+        # maximum = max(prediction)
+        index = prediction.argmax()
+        classification_arr = np.roll(classification_arr,-1)
+        classification_arr[-1] = index
 
-        # print(np.size(array))
-        # print(string_thing)
-        # global i, df, array
+        # print(prediction)
+        # print(index)
+        # df.plot()
+        # arduino.write(index + 1)
+        if (stats.mode(classification_arr)[0] == 1): #use mode to determine output
+            # arduino.write(str.encode('1'))
+            arduino.write(bytes('1', 'utf-8'))
+            # arduino_print = arduino.readline()
+            # print(arduino_print)
+            print('rest')
+            # print(index)
 
-
-        # if (i == 0):
-        #     array = np.array(ad)
-        # else:
-        #     temp = np.array(ad)
-        #     np.concatenate((array,temp), axis = 0)
-        # print(array)
-        # # self.df[i] = array.tolist()
-        # # df[i] = array.tolist()
-        # i += 1
-        # print(i)
-
+        elif (stats.mode(classification_arr)[0] == 0):
+            # arduino.write(str.encode('2'))
+            arduino.write(bytes('2', 'utf-8'))
+            # arduino_print = arduino.readline()
+            # print(arduino_print)
+            print('fist')
+            # print(index)
+        else:
+            # arduino.write(str.encode('3'))
+            arduino.write(bytes('3', 'utf-8'))
+            # arduino_print = arduino.readline()
+            # print(arduino_print)
+            print('pinch')
+            # print(index)
+        # try:
+        #     if(index == 1):
+        #         # arduino.write(str.encode('1'))
+        #         arduino.write(bytes('1','utf-8'))
+        #         # arduino_print = arduino.readline()
+        #         # print(arduino_print)
+        #         print('REST')
+        #     elif(index == 0):
+        #         # arduino.write(str.encode('2'))
+        #         arduino.write(bytes('2', 'utf-8'))
+        #         # arduino_print = arduino.readline()
+        #         # print(arduino_print)
+        #         print('FIST')
+        #     else:
+        #         # arduino.write(str.encode('3'))
+        #         arduino.write(bytes('3', 'utf-8'))
+        #         # arduino_print = arduino.readline()
+        #         # print(arduino_print)/
+        #         print('PINCH')
+        # except:
+        #     waste = 1
+        # print("Probabilities: " + prediction + "\n" + "Max: "+ maximum + "\n" + "Index: " + index + "\n")
 
     async def on_emg_data(self, emg: EMGData):
         # logging.info(emg)
@@ -124,9 +175,9 @@ async def main(args: argparse.Namespace):
     await sc.start()
 
     # receive notifications for 5 seconds
-    time = 300.0
-    await asyncio.sleep(int(time))
-    # await asyncio.Future()
+    # time = 5.0
+    # await asyncio.sleep(int(time))
+    await asyncio.Future()
 
     df.to_csv('g_ian_two_pinch_no_wrist.csv')
 

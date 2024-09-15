@@ -4,6 +4,7 @@
 import argparse
 import asyncio
 import logging
+import serial
 
 from myo import AggregatedData, MyoClient
 from myo.types import (
@@ -20,17 +21,59 @@ from myo.types import (
 from myo.constants import RGB_PINK
 import pandas as pd
 import numpy as np
-# from csv_logger import CsvLogger
-import matplotlib.pyplot as plt
 
-global df
+import concurrent.futures
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer
+import time
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.animation import FuncAnimation
+
+# from csv_logger import CsvLogger
+
+# global df
+#
+# df = pd.DataFrame(columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
+#                            'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13',
+#                            'channel 14', 'channel 15',
+#                            'channel 16', 'channel 17', 'channel 18'])
+global sensor_vectors, plots
+
+#########Set up plotting##############
+
+x_axis_size = 500  # sets how many data points are kept for plotting
+time_between_updates = 1  # sets how often the plots update function is called, in ms
 
 df = pd.DataFrame(columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
-                           'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13', 'channel 14', 'channel 15',
-                           'channel 16','channel 17','channel 18'])
+                           'channel 8', ])  # start of creating dataframe to record data; WIP
+# vectors holding data being plotted
+sensor_vectors = np.zeros((8, x_axis_size,))  # different sensor_vectors for each sensor
+plots = []
+ser = serial.Serial("COM4",115200)
+
+def update_plots():
+    global plots
+    for i in range(8):
+        plots[i]['curve'].setData(sensor_vectors[i])  # update plot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class SampleClient(MyoClient):
-
     # global df
     # df = pd.DataFrame(columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
     #                        'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13', 'channel 14', 'channel 15','channel 16'])
@@ -48,11 +91,17 @@ class SampleClient(MyoClient):
     async def on_aggregated_data(self, ad: AggregatedData):
         # logging.info(ad)
         #
+        global sensor_vectors
+        global plots
+
+        string = str(ad)
+        array = string.split(',')
+        array = np.array(array).reshape(1, 18)
         print(2)
         global df
         string = str(ad)
         array = string.split(',')
-        array = np.array(array).reshape(1,18)
+        array = np.array(array).reshape(1, 18)
         print(array)
         try:
             df = df.append(pd.DataFrame(array, columns=df.columns), ignore_index=False)
@@ -62,7 +111,6 @@ class SampleClient(MyoClient):
         # print(np.size(array))
         # print(string_thing)
         # global i, df, array
-
 
         # if (i == 0):
         #     array = np.array(ad)
@@ -74,7 +122,6 @@ class SampleClient(MyoClient):
         # # df[i] = array.tolist()
         # i += 1
         # print(i)
-
 
     async def on_emg_data(self, emg: EMGData):
         # logging.info(emg)
@@ -97,13 +144,11 @@ class SampleClient(MyoClient):
 
 
 async def main(args: argparse.Namespace):
+    global df
 
-    # global df
-    #
     # df = pd.DataFrame(columns=['channel 1', 'channel 2', 'channel 3', 'channel 4', 'channel 5', 'channel 6', 'channel 7',
     #                        'channel 8', 'channel 9', 'channel 10', 'channel 11', 'channel 12', 'channel 13', 'channel 14', 'channel 15',
     #                        'channel 16'])
-
 
     logging.info("scanning for a Myo device...")
 
@@ -123,78 +168,44 @@ async def main(args: argparse.Namespace):
     # start the indicate/notify
     await sc.start()
 
+
+    # Create a PyQtGraph application
+    app = QApplication([])
+
+    # Create a PyQtGraph plot window
+    win = pg.GraphicsLayoutWidget(show=True)
+    win.setWindowTitle('Live Vector Plot')
+
+    # Create a list to store PlotItem objects for each vector
+    # plots = []
+
+    # Initialize the plots with the initial data
+    colorList = ["#fa9189", "#fcae7c",
+                 "#ffe699", "#f9ffb5", "#b3f5bc", "#d6f6ff", "#e2cbf7", "#d1bdf1"]
+    plot = '1'
+    plot_position_iterator = 1  # used to determine when to create new row or column
+    for vector in sensor_vectors:
+        plot = win.addPlot(title=f"Channel {plot_position_iterator}")
+        plot.setXRange(0, x_axis_size)
+        curve = plot.plot(vector, pen=colorList[plot_position_iterator - 1])
+        plots.append({'plot': plot, 'curve': curve})
+        if plot_position_iterator % 2 == 0:
+            win.nextRow()
+        elif plot_position_iterator % 2 == 1:
+            win.nextCol()
+        plot_position_iterator += 1
+
+    # timer = QTimer()
+    # timer.timeout.connect(update_plots)
+    # timer.start(time_between_updates)
+    # app.exec_()
+
     # receive notifications for 5 seconds
-    time = 300.0
-    await asyncio.sleep(int(time))
-    # await asyncio.Future()
+    # await asyncio.sleep(300)
+    await asyncio.Future()
+    app.exec_()
 
-    df.to_csv('g_ian_two_pinch_no_wrist.csv')
-
-
-    # y_1 = df['channel 1'].astype(int).to_numpy()
-    # y_2 = df['channel 2'].astype(int).to_numpy()
-    # y_3 = df['channel 3'].astype(int).to_numpy()
-    # y_4 = df['channel 4'].astype(int).to_numpy()
-    # y_5 = df['channel 5'].astype(int).to_numpy()
-    # y_6 = df['channel 6'].astype(int).to_numpy()
-    # y_7 = df['channel 7'].astype(int).to_numpy()
-    # y_8 = df['channel 8'].astype(int).to_numpy()
-    # print(y_1)
-    # time_plot = np.arange(0,time,time / y_1.size)
-    # plt.figure(facecolor = '#cccccc')
-    #
-    # plt.subplot(4, 2, 1)
-    # plt.plot(time_plot, y_1, color='#cc0000')
-    # plt.title('Channel 1')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 2)
-    # plt.plot(time_plot, y_2,color = '#ff9900')
-    # plt.title('Channel 2')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 3)
-    # plt.plot(time_plot, y_3,color = '#cc9900')
-    # plt.title('Channel 3')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='y', nbins=4)
-    # plt.subplot(4, 2, 4)
-    # plt.plot(time_plot, y_4,color = '#cccc00')
-    # plt.title('Channel 4')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 5)
-    # plt.plot(time_plot, y_5,color = '#009933')
-    # # plt.plot(y_5)
-    # plt.title('Channel 5')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 6)
-    # plt.plot(time_plot, y_6,color = '#006699')
-    # # plt.plot(y_6)
-    # plt.title('Channel 6')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 7)
-    # plt.plot(time_plot, y_7,color = '#993366')
-    # # plt.plot(y_7)
-    # plt.title('Channel 7')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.subplot(4, 2, 8)
-    # plt.plot(time_plot, y_8,color = '#660066')
-    # # plt.plot(y_8)
-    # plt.title('Channel 8')
-    # plt.xlabel('Time (s)')
-    # plt.locator_params(axis='both', nbins=4)
-    # plt.tight_layout()
-    # # plt.set_facecolor('black')
-    # # ax = plt.axes()
-
-    # Setting the background color of the plot
-    # using set_facecolor() method
-    # ax.set_facecolor("#1CC4AF")
-    # plt.show()
+    df.to_csv('group_pinch_no_wrist_moving.csv')
 
     # stop the indicate/notify
     await sc.stop()
@@ -206,7 +217,6 @@ async def main(args: argparse.Namespace):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
