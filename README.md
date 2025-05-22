@@ -43,9 +43,9 @@ Compared to other Myo libraries/SDKs:
 
 ## Platform Support
 
-| Linux | Raspberry Pi | macOS |
-| :---: | :----------: | :---: |
-|  ✅   |      ✅      |  ✅   |
+| Linux | Raspberry Pi | macOS | Windows |
+| :---: | :----------: | :---: | :-----: |
+|  ✅   |      ✅      |  ✅   |   ✅    |
 
 ## Install
 

@@ -10,12 +10,17 @@ on:
 jobs:
   pytest:
     env:
-      poetry-version: "1.5.1"
+      python-version: "3.11"
+      poetry-version: "1.8.3"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-      - name: Set up Poetry ${{ matrix.poetry-version }}
+      - name: Set up Python ${{ env.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.python-version }}
+      - name: Set up Poetry ${{ env.poetry-version }}
         uses: abatilo/actions-poetry@v3
         with:
           poetry-version: ${{ env.poetry-version }}
