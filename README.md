@@ -15,6 +15,8 @@ The GATT service naming convention reflects the official BLE specification for M
 
 See [`myo/profile.py`](https://github.com/iomz/dl-myo/blob/main/myo/profile.py) for more detail.
 
+For further developments, see my project using this library: https://github.com/Interactions-HSG/MyoKTROS
+
 <!-- vim-markdown-toc GFM -->
 
 - [Features](#features)
@@ -41,9 +43,9 @@ Compared to other Myo libraries/SDKs:
 
 ## Platform Support
 
-| Linux | Raspberry Pi | macOS | Windows |
-| :---: | :----------: | :---: | :-----: |
-|  ✅   |      ✅      |  ✅   |   ✅    |
+| Linux | Raspberry Pi | macOS |
+| :---: | :----------: | :---: |
+|  ✅   |      ✅      |  ✅   |
 
 ## Install
 

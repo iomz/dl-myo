@@ -19,8 +19,8 @@ from myo.constants import RGB_ORANGE
 
 
 class InfluxClient(MyoClient):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, aggregate_all, aggregate_emg):
+        super().__init__(aggregate_all, aggregate_emg)
         self.bucket = None
         self.org = None
         self.url = None
@@ -43,9 +43,9 @@ class InfluxClient(MyoClient):
             write_api = client.write_api()
             await write_api.write(bucket=self.bucket, record=record)
 
-    async def on_emg_data_aggregated(self, emg_data):
+    async def on_emg_data_aggregated(self, eds):
         p = Point('emg_data')
-        for i, data in enumerate(emg_data):
+        for i, data in enumerate(eds.data):
             p.field(f"emg{i}", data)
         await self.write_point(p)
 
