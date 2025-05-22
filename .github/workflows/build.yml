@@ -1,3 +1,4 @@
+---
 name: build
 on:
   pull_request: []
@@ -35,7 +36,7 @@ jobs:
           poetry install --no-interaction
           poetry build
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist
