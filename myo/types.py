@@ -1,9 +1,8 @@
 """
-    myo.types
-    ------------
-    Type reflections from myo-bluetooth/myohw.h
+myo.types
+------------
+Type reflections from myo-bluetooth/myohw.h
 """
-
 
 import json
 import struct
@@ -27,7 +26,7 @@ class Arm(Enum):
 class ClassifierEvent:
     def __init__(self, data):
         # ClassifierEvent is a union
-        t = struct.unpack('<6B', data)[0]
+        t = struct.unpack("<6B", data)[0]
         self.t = ClassifierEventType(t)
         if self.t == ClassifierEventType.ARM_SYNCED:
             _, a, x, _, _, _ = struct.unpack("<6B", data)
@@ -111,7 +110,7 @@ class EMGData:
 # cf. https://github.com/dzhu/myo-raw/blob/6873d04d647702b304b0592ee25994d196659bb0/myo_raw.py#LL276C11-L276C11
 class FVData:
     def __init__(self, data):
-        u = struct.unpack('<8Hb', data)
+        u = struct.unpack("<8Hb", data)
         self.fv = u[:8]
         self.mask = u[8]
 
@@ -158,7 +157,7 @@ class FirmwareInfo:
     def to_dict(self):
         """
         Return a dictionary containing parsed firmware metadata.
-        
+
         Returns:
             dict: Mapping with keys:
                 - "serial_number": Serial number as an uppercase, colon-separated hex string.
@@ -362,7 +361,7 @@ class AggregatedData:
     def __init__(self, fvd: FVData, imu: IMUData):
         """
         Create an AggregatedData container that holds paired FVData and IMUData.
-        
+
         Parameters:
             fvd (FVData): Filtered-value data payload to include.
             imu (IMUData): IMU data payload to include.
@@ -373,18 +372,19 @@ class AggregatedData:
     def __str__(self):
         """
         Return a compact comma-separated string combining FV values and IMU data.
-        
+
         Returns:
-            str: A string containing the `fvd.fv` values joined by commas, followed by a comma and the string form of the `imu` object.
+            str: A string containing the `fvd.fv` values joined by commas,
+                followed by a comma and the string form of the `imu` object.
         """
         return f"{','.join(map(str, self.fvd.fv))},{self.imu}"
 
     def json(self):
         """
         Serialize the object to a JSON-formatted string.
-        
+
         The JSON is produced from the object's dictionary representation returned by `to_dict()`.
-        
+
         Returns:
             str: JSON string representing the object's data.
         """
@@ -393,7 +393,7 @@ class AggregatedData:
     def to_dict(self):
         """
         Convert the aggregated FVData and IMUData into a JSON-serializable dictionary.
-        
+
         Returns:
             dict: A mapping with keys "fvd" and "imu" where values are the result of
                 calling `to_dict()` on the contained FVData and IMUData instances, respectively.
@@ -407,16 +407,17 @@ class EMGDataSingle:
     def __init__(self, data):
         """
         Initialize the EMGDataSingle wrapper with a single EMG sample.
-        
+
         Parameters:
-            data (sequence[int] | bytes | list): The raw EMG sample to wrap; typically a sequence of 8 signed byte values.
+            data (sequence[int] | bytes | list):
+                The raw EMG sample to wrap; typically a sequence of 8 signed byte values.
         """
         self.data = data
 
     def __str__(self):
         """
         Produce a string representation of the wrapped EMG data.
-        
+
         Returns:
             str: String representation of the underlying `data` attribute.
         """
@@ -425,9 +426,9 @@ class EMGDataSingle:
     def json(self):
         """
         Serialize the object to a JSON-formatted string.
-        
+
         The JSON is produced from the object's dictionary representation returned by `to_dict()`.
-        
+
         Returns:
             str: JSON string representing the object's data.
         """
@@ -436,7 +437,7 @@ class EMGDataSingle:
     def to_dict(self):
         """
         Return a dictionary representation of the EMGDataSingle containing the raw EMG sample.
-        
+
         Returns:
             dict: Mapping with key "data" holding the wrapped EMG sample.
         """

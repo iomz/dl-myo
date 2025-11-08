@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 
 async def gatt_char_to_dict(client: BleakClient, char: BleakGATTCharacteristic) -> Optional[dict]:
     """
-    Convert a GATT characteristic into a serializable dictionary with a human-readable name, UUID, properties, and optionally its value.
-    
+    Convert a GATT characteristic into a serializable dictionary
+    with a human-readable name, UUID, properties, and optionally its value.
+
     Parameters:
         client (BleakClient): BLE client used to read the characteristic value when the characteristic is readable.
         char (BleakGATTCharacteristic): The characteristic to convert.
-    
+
     Returns:
         dict | None: A dictionary containing:
             - "name" (str): Human-readable characteristic name.

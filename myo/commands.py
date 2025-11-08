@@ -1,7 +1,7 @@
 """
-    myo.commands
-    ------------
-    The available commands derived from myohw.h
+myo.commands
+------------
+The available commands derived from myohw.h
 """
 
 from .types import (
@@ -25,7 +25,7 @@ class Command:
     def payload(self) -> bytearray:
         """
         Return the command payload.
-        
+
         Returns:
             payload (bytearray): The command payload bytes (empty by default).
         """
@@ -35,7 +35,7 @@ class Command:
     def data(self) -> bytearray:
         """
         Return the full command bytes consisting of a 2-byte header followed by the payload.
-        
+
         Returns:
             bytearray: Header `[cmd, payload_length]` concatenated with the command payload bytes.
         """
@@ -46,7 +46,7 @@ class Command:
     def __str__(self) -> str:
         """
         Return a concise, debug-friendly representation of the command.
-        
+
         Returns:
             A string in the format "ClassName: <payload>" where `<payload>` is the command's payload.
         """
@@ -67,7 +67,7 @@ class SetMode(Command):
     ):
         """
         Initialize the SetMode command with specific classifier, EMG, and IMU modes.
-        
+
         Parameters:
             classifier_mode (ClassifierMode): Mode to set for the on-device classifier.
             emg_mode (EMGMode): Mode to set for EMG sampling/processing.
@@ -81,9 +81,10 @@ class SetMode(Command):
     def payload(self) -> bytearray:
         """
         Payload bytes for the SetMode command in EMG, IMU, then Classifier order.
-        
+
         Returns:
-            bytearray: Three-byte payload containing the EMG mode value, the IMU mode value, and the Classifier mode value, in that order.
+            bytearray: Three-byte payload containing the EMG mode value, the IMU mode value,
+                and the Classifier mode value, in that order.
         """
         return bytearray(
             (
@@ -103,7 +104,7 @@ class Vibrate(Command):
     def __init__(self, vibration_type: VibrationType):
         """
         Initialize the Vibrate command with a specified vibration type.
-        
+
         Parameters:
             vibration_type (VibrationType): Vibration pattern/strength to send to the device.
         """
@@ -123,8 +124,9 @@ class DeepSleep(Command):
     def __init__(self) -> None:
         """
         Create a DeepSleep command instance.
-        
-        This command requires no parameters and produces no payload; it represents a request to put the device into deep sleep.
+
+        This command requires no parameters and produces no payload;
+        it represents a request to put the device into deep sleep.
         """
         pass
 
@@ -138,11 +140,11 @@ class LED(Command):
     def __init__(self, logo: list[int], line: list[int]):
         """
         Initialize LED command with RGB values for the logo and line LEDs.
-        
+
         Parameters:
             logo: Three integers [r, g, b] for the logo LED (each 0–255).
             line: Three integers [r, g, b] for the line LED (each 0–255).
-        
+
         Raises:
             ValueError: If `logo` or `line` does not contain exactly three values.
         """
@@ -168,7 +170,7 @@ class Vibrate2(Command):
         def __init__(self, duration: int, strength: int):
             """
             Create a vibration step with a duration and strength.
-            
+
             Parameters:
                 duration (int): Duration in milliseconds (0–65535).
                 strength (int): Vibration strength 0–255 (0 = motor off, 255 = full speed).
@@ -179,7 +181,7 @@ class Vibrate2(Command):
     def __init__(self, duration: int, strength: int):
         """
         Create a Vibrate2 command configured with a single vibration step.
-        
+
         Parameters:
             duration (int): Duration of the vibration in milliseconds (0–65535).
             strength (int): Vibration strength as an unsigned byte (0–255).
@@ -190,9 +192,10 @@ class Vibrate2(Command):
     def payload(self) -> bytearray:
         """
         Get the three-byte payload for the vibration step: duration high byte, duration low byte, then strength.
-        
+
         Returns:
-            bytearray: Three bytes in order: high byte of `steps.duration`, low byte of `steps.duration`, and `steps.strength`.
+            bytearray: Three bytes in order: high byte of `steps.duration`,
+                low byte of `steps.duration`, and `steps.strength`.
         """
         return bytearray(
             (
@@ -212,7 +215,7 @@ class SetSleepMode(Command):
     def __init__(self, sleep_mode: SleepMode):
         """
         Initialize the command with the desired device sleep mode.
-        
+
         Parameters:
             sleep_mode (SleepMode): The sleep mode to apply to the device.
         """
@@ -232,7 +235,7 @@ class Unlock(Command):
     def __init__(self, unlock_type: UnlockType):
         """
         Initialize the Unlock command with the specified unlock type.
-        
+
         Parameters:
             unlock_type (UnlockType): The unlock action to send to the device; used to construct the command payload.
         """
@@ -251,7 +254,7 @@ class UserAction(Command):
     def __init__(self, user_action_type: UserActionType):
         """
         Initialize a UserAction command with the specified user action type.
-        
+
         Parameters:
             user_action_type (UserActionType): The action to send to the device as the command payload.
         """
