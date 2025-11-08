@@ -5,17 +5,14 @@
 """
 from __future__ import absolute_import, annotations
 
-from .core import (
-    AggregatedData,
-    EMGDataSingle,
-    Myo,
-    MyoClient,
-)
+from .core import Myo, MyoClient
 from .profile import Handle
 from .types import (
+    AggregatedData,
     ClassifierEvent,
     ClassifierMode,
     EMGData,
+    EMGDataSingle,
     EMGMode,
     FVData,
     FirmwareInfo,

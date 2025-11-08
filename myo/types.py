@@ -158,7 +158,7 @@ class FirmwareInfo:
     def to_dict(self):
         return {
             "serial_number": self._serial_number,
-            "unlock_pose": self._has_custom_classifier,
+            "unlock_pose": self._unlock_pose,
             "active_classifier_type": self._active_classifier_type,
             "active_classifier_index": self._active_classifier_index,
             "has_custom_classifier": self._has_custom_classifier,
@@ -340,3 +340,37 @@ class XDirection(Enum):
     TOWARD_WRIST = 0x01
     TOWARD_ELBOW = 0x02
     DIRECTION_UNKNOWN = 0xFF
+
+
+# Custom data types for aggregated data
+class AggregatedData:
+    """Aggregated data type combining FV (filtered value) and IMU data."""
+
+    def __init__(self, fvd: FVData, imu: IMUData):
+        self.fvd = fvd
+        self.imu = imu
+
+    def __str__(self):
+        return f"{','.join(map(str, self.fvd.fv))},{self.imu}"
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"fvd": self.fvd.to_dict(), "imu": self.imu.to_dict()}
+
+
+class EMGDataSingle:
+    """Single EMG data sample from EMGData."""
+
+    def __init__(self, data):
+        self.data = data
+
+    def __str__(self):
+        return str(self.data)
+
+    def json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"data": self.data}
