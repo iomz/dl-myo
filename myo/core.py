@@ -101,7 +101,9 @@ class Myo:
         """
 
         def match_myo_uuid(_: BLEDevice, adv: AdvertisementData) -> bool:
-            return str(GATTProfile.MYO_SERVICE).lower() in adv.service_uuids
+            uuids = adv.service_uuids or []
+            target = str(GATTProfile.MYO_SERVICE).lower()
+            return any(target == uuid.lower() for uuid in uuids)
 
         self = cls()
         self._device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
@@ -122,7 +124,9 @@ class Myo:
             Battery level as percentage (0-100)
         """
         val = await client.read_gatt_char(Handle.BATTERY_LEVEL.value)
-        return ord(val)
+        if not val:
+            raise ValueError("Empty battery characteristic payload")
+        return int.from_bytes(val, "little")
 
     async def command(self, client: BleakClient, cmd: Command) -> None:
         """
