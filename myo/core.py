@@ -55,11 +55,24 @@ class Myo:
     __slots__ = "_device"
 
     def __init__(self) -> None:
+        """
+        Initialize the Myo instance with no discovered BLE device.
+        
+        The internal `_device` attribute is set to `None` and will be populated by discovery helpers when a device is found.
+        """
         self._device: Optional[BLEDevice] = None
 
     @property
     def device(self) -> BLEDevice:
-        """Get the discovered BLE device."""
+        """
+        Get the discovered BLE device.
+        
+        Returns:
+            BLEDevice: The discovered BLE device.
+        
+        Raises:
+            ValueError: If no device has been discovered; call `with_mac()` or `with_uuid()` first.
+        """
         if self._device is None:
             raise ValueError("Device not discovered. Call with_mac() or with_uuid() first.")
         return self._device
@@ -67,16 +80,26 @@ class Myo:
     @classmethod
     async def with_mac(cls, mac: str) -> Optional["Myo"]:
         """
-        Discover a Myo device by MAC address.
-
-        Args:
-            mac: MAC address of the device (e.g., "D2:3B:85:94:32:8E")
-
+        Discover a Myo device by its Bluetooth MAC address.
+        
+        Parameters:
+            mac (str): MAC address of the device (e.g., "D2:3B:85:94:32:8E").
+        
         Returns:
-            Myo instance if device is found, None otherwise
+            Optional[Myo]: A Myo instance when a device with the specified MAC is found, `None` otherwise.
         """
 
         def match_myo_mac(device: BLEDevice, _: AdvertisementData) -> bool:
+            """
+            Determine whether the given BLE device's MAC address matches the target MAC (case-insensitive).
+            
+            Parameters:
+                device (BLEDevice): The BLE device whose address will be compared.
+                _ (AdvertisementData): Unused advertisement data parameter provided by the scanner callback.
+            
+            Returns:
+                bool: `True` if the device's address equals the target MAC ignoring case, `False` otherwise.
+            """
             return mac.lower() == device.address.lower()
 
         self = cls()
@@ -94,13 +117,22 @@ class Myo:
     @classmethod
     async def with_uuid(cls) -> Optional["Myo"]:
         """
-        Discover a Myo device by service UUID.
-
+        Discover a Myo BLE device by matching its service UUID and return a Myo configured with the found device.
+        
         Returns:
-            Myo instance if device is found, None otherwise
+            Optional[Myo]: A Myo instance with its device set if a matching device is found, `None` otherwise.
         """
 
         def match_myo_uuid(_: BLEDevice, adv: AdvertisementData) -> bool:
+            """
+            Check whether the advertisement contains the Myo service UUID.
+            
+            Parameters:
+                adv (AdvertisementData): Advertisement payload whose service UUIDs will be inspected.
+            
+            Returns:
+                `true` if any service UUID in `adv.service_uuids` matches `GATTProfile.MYO_SERVICE` (comparison is case-insensitive), `false` otherwise.
+            """
             uuids = adv.service_uuids or []
             target = str(GATTProfile.MYO_SERVICE).lower()
             return any(target == uuid.lower() for uuid in uuids)
@@ -115,13 +147,16 @@ class Myo:
 
     async def battery_level(self, client: BleakClient) -> int:
         """
-        Read battery level from the device.
-
-        Args:
-            client: The BleakClient instance
-
+        Return the device battery level as a percentage.
+        
+        Parameters:
+            client (BleakClient): Connected BleakClient used to read the GATT characteristic.
+        
         Returns:
-            Battery level as percentage (0-100)
+            int: Battery level as an integer percentage from 0 to 100.
+        
+        Raises:
+            ValueError: If the battery characteristic payload is empty.
         """
         val = await client.read_gatt_char(Handle.BATTERY_LEVEL.value)
         if not val:
@@ -130,11 +165,10 @@ class Myo:
 
     async def command(self, client: BleakClient, cmd: Command) -> None:
         """
-        Send a command to the device.
-
-        Args:
-            client: The BleakClient instance
-            cmd: Command to send
+        Send a Command payload to the device's COMMAND GATT characteristic.
+        
+        Parameters:
+            cmd (Command): Command object whose payload will be written to the COMMAND characteristic (performed as a write-with-response).
         """
         await client.write_gatt_char(Handle.COMMAND.value, cmd.data, True)
 
@@ -144,15 +178,14 @@ class Myo:
 
     async def led(self, client: BleakClient, logo: list[int], line: list[int]) -> None:
         """
-        Set LED colors.
-
-        Args:
-            client: The BleakClient instance
-            logo: RGB values for logo LED [r, g, b] (0-255)
-            line: RGB values for line LED [r, g, b] (0-255)
-
+        Set the device's logo and line LEDs to the specified RGB colors.
+        
+        Parameters:
+            logo (list[int]): Three integers [r, g, b] for the logo LED, each 0–255.
+            line (list[int]): Three integers [r, g, b] for the line LED, each 0–255.
+        
         Raises:
-            ValueError: If invalid payload is provided
+            ValueError: If either `logo` or `line` does not have exactly three integers or contains values outside 0–255.
         """
         if len(logo) != 3 or len(line) != 3:
             raise ValueError(f"LED data must be [r, g, b] format. Got logo={logo}, line={line}")
@@ -171,13 +204,12 @@ class Myo:
         imu_mode: IMUMode,
     ) -> None:
         """
-        Configure EMG, IMU, and Classifier modes.
-
-        Args:
-            client: The BleakClient instance
-            classifier_mode: Classifier mode setting
-            emg_mode: EMG data mode
-            imu_mode: IMU data mode
+        Configure the device's classifier, EMG, and IMU operating modes.
+        
+        Parameters:
+            classifier_mode (ClassifierMode): Classifier mode to apply.
+            emg_mode (EMGMode): EMG data mode to apply.
+            imu_mode (IMUMode): IMU mode to apply.
         """
         await self.command(
             client,
@@ -189,24 +221,38 @@ class Myo:
         )
 
     async def set_sleep_mode(self, client: BleakClient, sleep_mode: SleepMode) -> None:
-        """Set sleep mode."""
+        """
+        Set the device's sleep mode.
+        
+        Parameters:
+            client (BleakClient): Connected BLE client used to send the command.
+            sleep_mode (SleepMode): Target sleep mode to apply on the device.
+        """
         await self.command(client, SetSleepMode(sleep_mode))
 
     async def unlock(self, client: BleakClient, unlock_type) -> None:
-        """Unlock the device."""
+        """
+        Send an unlock command to the device with the specified unlock behavior.
+        
+        Parameters:
+            unlock_type: Value specifying the unlock behavior (typically an enum value understood by the device, e.g., timed or hold).
+        """
         await self.command(client, Unlock(unlock_type))
 
     async def user_action(self, client: BleakClient, user_action_type) -> None:
-        """Send user action command."""
+        """
+        Send a user action command to the connected Myo device.
+        
+        Parameters:
+            user_action_type: The user action identifier (e.g., enum or int) specifying which user action the device should perform.
+        """
         await self.command(client, UserAction(user_action_type))
 
     async def vibrate(self, client: BleakClient, vibration_type: VibrationType) -> None:
         """
-        Vibrate the device.
-
-        Args:
-            client: The BleakClient instance
-            vibration_type: Type of vibration to trigger
+        Trigger a vibration on the Myo device.
+        
+        Sends a vibrate command via the provided BleakClient. If the client lacks the expected connection attribute, the method catches the resulting AttributeError and logs debug information instead of raising.
         """
         try:
             await self.command(client, Vibrate(vibration_type))
@@ -218,17 +264,23 @@ class Myo:
 
     async def vibrate2(self, client: BleakClient, duration: int, strength: int) -> None:
         """
-        Vibrate with custom duration and strength.
-
-        Args:
-            client: The BleakClient instance
-            duration: Duration in milliseconds
-            strength: Strength (0-255, where 255 is full speed)
+        Trigger a vibration on the device with the specified duration and strength.
+        
+        Parameters:
+            client (BleakClient): BLE client used to send the vibration command.
+            duration (int): Vibration duration in milliseconds (0 for no duration).
+            strength (int): Vibration strength from 0 to 255, where 255 is maximum.
         """
         await self.command(client, Vibrate2(duration, strength))
 
     async def write(self, client: BleakClient, handle: int, value: bytes) -> None:
-        """Write to a GATT characteristic."""
+        """
+        Write the given bytes to the GATT characteristic identified by `handle` on the provided BLE client using a write-with-response.
+        
+        Parameters:
+            handle (int): GATT characteristic handle to write to.
+            value (bytes): Payload bytes to write.
+        """
         await client.write_gatt_char(handle, value, True)
 
 
@@ -237,11 +289,11 @@ class MyoClient(ABC):
 
     def __init__(self, aggregate_all: bool = False, aggregate_emg: bool = False) -> None:
         """
-        Initialize MyoClient.
-
-        Args:
-            aggregate_all: If True, aggregate FV and IMU data together
-            aggregate_emg: If True, aggregate EMG samples individually
+        Create a MyoClient and configure how incoming sensor data should be aggregated.
+        
+        Parameters:
+            aggregate_all (bool): If True, FV (filtered EMG) and IMU data are buffered and paired so they are delivered together as aggregated data.
+            aggregate_emg (bool): If True, EMG samples from multiple channels are combined into per-sample aggregated EMG events before being forwarded to handlers.
         """
         self.m: Optional[Myo] = None
         self.aggregate_all = aggregate_all
@@ -262,15 +314,15 @@ class MyoClient(ABC):
         aggregate_emg: bool = False,
     ) -> "MyoClient":
         """
-        Create and connect a MyoClient instance.
-
-        Args:
-            mac: Optional MAC address to connect to specific device
-            aggregate_all: If True, aggregate FV and IMU data together
-            aggregate_emg: If True, aggregate EMG samples individually
-
+        Create a MyoClient configured for a discovered device and establish its BLE connection.
+        
+        Parameters:
+            mac (Optional[str]): Specific device MAC address to discover; if omitted or empty, discovery uses service UUID.
+            aggregate_all (bool): When True, aggregate FV and IMU data before delivering to handlers.
+            aggregate_emg (bool): When True, aggregate EMG samples into individual aggregated samples.
+        
         Returns:
-            Connected MyoClient instance
+            MyoClient: A MyoClient instance connected to the discovered device.
         """
         self = cls(aggregate_all=aggregate_all, aggregate_emg=aggregate_emg)
         while self.m is None:
@@ -287,19 +339,41 @@ class MyoClient(ABC):
 
     @property
     def device(self) -> BLEDevice:
-        """Get the underlying BLE device."""
+        """
+        Get the underlying discovered BLE device.
+        
+        Returns:
+            BLEDevice: The discovered BLE device instance.
+        
+        Raises:
+            ValueError: If no device has been discovered; call with_device() first.
+        """
         if self.m is None:
             raise ValueError("Device not initialized. Call with_device() first.")
         return self.m.device
 
     async def battery_level(self) -> int:
-        """Get battery level from the device."""
+        """
+        Retrieve the device's battery level as a percentage.
+        
+        Returns:
+            int: Battery level from the connected device (0–100).
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         return await self.m.battery_level(self._client)
 
     async def connect(self) -> None:
-        """Connect the client to the Myo device."""
+        """
+        Connect to the discovered Myo device and establish a BLE session.
+        
+        Raises:
+            ValueError: if no device has been discovered via with_device().
+            RuntimeError: if creating the BLE client instance fails.
+        """
         if self.m is None:
             raise ValueError("Device not discovered. Call with_device() first.")
 
@@ -311,13 +385,22 @@ class MyoClient(ABC):
         logger.info("connected to %s: %s", self.device.name, self.device.address)
 
     async def deep_sleep(self) -> None:
-        """Put the device into deep sleep mode."""
+        """
+        Put the connected Myo device into deep sleep mode.
+        
+        Raises:
+            ValueError: If the client is not connected; call `connect()` first.
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.deep_sleep(self._client)
 
     async def disconnect(self) -> None:
-        """Disconnect the client from the Myo device."""
+        """
+        Disconnect from the discovered Myo device and clear the internal client state.
+        
+        If no active connection exists, the call is a no-op (a warning is logged). After completion the internal Bleak client reference is cleared.
+        """
         if self._client is None:
             logger.warning("connection is already closed")
             return
@@ -329,13 +412,18 @@ class MyoClient(ABC):
 
     async def get_services(self, indent: int = 1) -> str:
         """
-        Fetch available GATT services and characteristics.
-
-        Args:
-            indent: JSON indentation level
-
+        Return a JSON string describing discovered GATT services and their characteristics.
+        
+        Only services whose handle can be mapped to a known Handle name are included. Each service is keyed by its hex handle and contains "name", "uuid", and "chars"; characteristics are keyed by their hex handles and include the dictionary produced for each characteristic when available.
+        
+        Parameters:
+            indent (int): JSON indentation level used when serializing the result.
+        
         Returns:
-            JSON string representation of services
+            str: JSON string with the structure {"services": { "<service_handle_hex>": {"name": str, "uuid": str, "chars": { "<char_handle_hex>": {...} } } } }.
+        
+        Raises:
+            ValueError: If no BLE client connection exists (call connect() first).
         """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
@@ -363,10 +451,13 @@ class MyoClient(ABC):
 
     async def led(self, color: list[int]) -> None:
         """
-        Set LED color for both logo and line.
-
-        Args:
-            color: RGB color values [r, g, b] (0-255)
+        Set both logo and line LEDs to the same RGB color.
+        
+        Parameters:
+            color (list[int]): RGB triplet [r, g, b] with each component in 0-255.
+        
+        Raises:
+            ValueError: if not connected (call connect() first).
         """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
@@ -374,15 +465,22 @@ class MyoClient(ABC):
 
     @abstractmethod
     async def on_classifier_event(self, ce: ClassifierEvent) -> None:
-        """Handle classifier events. Override in subclasses."""
+        """
+        Handle a classifier event dispatched by the device.
+        
+        Parameters:
+            ce (ClassifierEvent): Classifier event payload received from the Myo device.
+        """
         raise NotImplementedError()
 
     async def on_data(self, data: Union[FVData, IMUData]) -> None:
         """
-        Internal method for aggregating FV and IMU data.
-
-        Args:
-            data: Either FVData or IMUData
+        Aggregate incoming FVData and IMUData until a matching pair is available, then deliver them as an AggregatedData to on_aggregated_data.
+        
+        This method stores the latest FVData or IMUData sample and, when both types are present, calls on_aggregated_data(...) with an AggregatedData combining them and then resets the stored samples. Operation is synchronized using the client's internal lock to ensure safe concurrent updates.
+        
+        Parameters:
+            data (Union[FVData, IMUData]): A single incoming FV or IMU data sample.
         """
         async with self._lock:
             if isinstance(data, FVData):
@@ -398,77 +496,78 @@ class MyoClient(ABC):
     @abstractmethod
     async def on_aggregated_data(self, ad: AggregatedData) -> None:
         """
-        Handle aggregated FV and IMU data.
-
-        This is invoked when both FVData and IMUData are ready.
-        Note: EMGData is not included as it is collected at a different
-        interval (200Hz instead of 50Hz).
-
-        Args:
-            ad: Aggregated data containing FV and IMU data
+        Handle aggregated FV and IMU measurements and deliver them to the client.
+        
+        Called when both FV and IMU samples are available; EMG data is not included because it is produced at a different rate (200 Hz vs 50 Hz).
+        
+        Parameters:
+            ad (AggregatedData): Aggregated structure containing the paired FV and IMU samples.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def on_emg_data(self, emg: EMGData) -> None:
         """
-        Handle EMG data. Override in subclasses.
-
-        Args:
-            emg: EMG data containing two samples of 8 channels each
+        Handle an incoming EMG data packet.
+        
+        Parameters:
+            emg (EMGData): EMG data containing two sequential samples, each with eight channel values.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def on_emg_data_aggregated(self, eds: EMGDataSingle) -> None:
         """
-        Handle individual EMG data samples. Override in subclasses.
-
-        Args:
-            eds: Single EMG data sample
+        Handle a single aggregated EMG data sample.
+        
+        Parameters:
+            eds (EMGDataSingle): The EMG sample to process; subclasses implement how the sample is consumed.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def on_fv_data(self, fvd: FVData) -> None:
         """
-        Handle filtered value (FV) data. Override in subclasses.
-
-        Args:
-            fvd: Filtered value data
+        Handle an incoming filtered-value (FV) sensor sample.
+        
+        Subclasses must implement this to process or forward the provided FVData.
+        
+        Parameters:
+            fvd (FVData): The filtered-value data payload received from the device.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def on_imu_data(self, imu: IMUData) -> None:
         """
-        Handle IMU data. Override in subclasses.
-
-        Args:
-            imu: IMU data containing orientation, accelerometer, and gyroscope
+        Handle incoming IMU data events.
+        
+        Called when a parsed IMUData sample is received; implement to process orientation, accelerometer, and gyroscope values carried by `imu`.
+        
+        Parameters:
+            imu (IMUData): Parsed IMU sample containing orientation, acceleration, and angular velocity.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def on_motion_event(self, me: MotionEvent) -> None:
         """
-        Handle motion events. Override in subclasses.
-
-        Args:
-            me: Motion event (e.g., tap)
+        Handle an incoming motion event.
+        
+        Parameters:
+            me (MotionEvent): Motion event information (e.g., tap, orientation change) to be handled by the client.
         """
         raise NotImplementedError()
 
     async def notify_callback(self, sender: BleakGATTCharacteristic, data: bytearray) -> None:
         """
-        Internal callback for handling GATT notifications.
-
-        Routes incoming data to appropriate handler methods based on the
-        characteristic handle.
-
-        Args:
-            sender: The GATT characteristic that sent the notification
-            data: The notification data
+        Route an incoming GATT notification to the appropriate event handler based on its characteristic handle.
+        
+        When the characteristic corresponds to FV or IMU data and `aggregate_all` is enabled, forwards the parsed data to the aggregation path; otherwise dispatches to the FV/IMU handlers. For EMG characteristics, if `aggregate_emg` is enabled, forwards each parsed single EMG sample to the aggregated-EMG handler; otherwise dispatches the full EMG frame to the EMG handler. Classifier and motion events are parsed and dispatched to their respective handlers.
+        
+        Parameters:
+            sender (BleakGATTCharacteristic): Characteristic that produced the notification (used to determine the handle).
+            data (bytearray): Raw notification payload to be parsed and dispatched.
         """
         handle = Handle(sender.handle)
         logger.debug("notify_callback (%s): %s", handle, data)
@@ -509,12 +608,15 @@ class MyoClient(ABC):
         imu_mode: IMUMode,
     ) -> None:
         """
-        Configure EMG, IMU, and Classifier modes.
-
-        Args:
-            classifier_mode: Classifier mode setting
-            emg_mode: EMG data mode
-            imu_mode: IMU data mode
+        Configure the device's classifier, EMG, and IMU operating modes.
+        
+        Parameters:
+            classifier_mode (ClassifierMode): Desired classifier mode.
+            emg_mode (EMGMode): Desired EMG data mode.
+            imu_mode (IMUMode): Desired IMU data mode.
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
         """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
@@ -526,7 +628,15 @@ class MyoClient(ABC):
         )
 
     async def set_sleep_mode(self, sleep_mode: SleepMode) -> None:
-        """Set sleep mode."""
+        """
+        Configure the device sleep mode.
+        
+        Parameters:
+            sleep_mode (SleepMode): Desired sleep mode to apply to the device.
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.set_sleep_mode(self._client, sleep_mode)
@@ -538,12 +648,14 @@ class MyoClient(ABC):
         imu_mode: IMUMode = IMUMode.NONE,
     ) -> None:
         """
-        Setup the Myo device with default configuration.
-
-        Args:
-            classifier_mode: Classifier mode (default: DISABLED)
-            emg_mode: EMG data mode (default: SEND_FILT)
-            imu_mode: IMU data mode (default: NONE)
+        Configure the connected Myo device for operation and apply initial runtime settings.
+        
+        Performs an initial setup sequence on the already-connected device: indicates status with LEDs, reads and logs battery level, vibrates briefly, disables automatic sleep, and applies the requested classifier, EMG, and IMU modes. If `aggregate_all` was enabled on this client, mode values are overridden to the values required for aggregation.
+        
+        Parameters:
+            classifier_mode (ClassifierMode): Desired classifier mode to apply (ignored if aggregation forces a different mode).
+            emg_mode (EMGMode): Desired EMG data mode to apply (ignored if aggregation forces a different mode).
+            imu_mode (IMUMode): Desired IMU data mode to apply (ignored if aggregation forces a different mode).
         """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
@@ -579,7 +691,11 @@ class MyoClient(ABC):
         await self.led(RGB_PINK)
 
     async def sleep(self) -> None:
-        """Put the device to sleep and disconnect."""
+        """
+        Put the connected Myo device into normal sleep mode and disconnect it.
+        
+        This sets the device LED to pink, applies the normal sleep mode, waits 0.5 seconds to allow the device to enter sleep, and then disconnects the BLE client.
+        """
         logger.info("sleep %s", self.device.name)
         await self.led(RGB_PINK)
         await self.set_sleep_mode(SleepMode.NORMAL)
@@ -587,7 +703,12 @@ class MyoClient(ABC):
         await self.disconnect()
 
     def _get_emg_handles(self) -> list[int]:
-        """Get list of EMG data handles based on current mode."""
+        """
+        Return EMG-related GATT characteristic handles for the current EMG mode.
+        
+        Returns:
+            list[int]: Handles to subscribe to — four EMG channel handles when `emg_mode` is `SEND_EMG` or `SEND_RAW`, the filtered FV handle when `emg_mode` is `SEND_FILT`, or an empty list otherwise.
+        """
         if self.emg_mode in [EMGMode.SEND_EMG, EMGMode.SEND_RAW]:
             return [
                 Handle.EMG0_DATA.value,
@@ -600,7 +721,12 @@ class MyoClient(ABC):
         return []
 
     def _get_imu_handles(self) -> list[int]:
-        """Get list of IMU data handles based on current mode."""
+        """
+        Determine which IMU-related GATT characteristic handles should be subscribed to based on the current IMU mode.
+        
+        Returns:
+            list[int]: A list of integer GATT handles to subscribe for IMU data. May include the `IMU_DATA` handle when IMU mode is neither `NONE` nor `SEND_EVENTS`, and the `MOTION_EVENT` handle when IMU mode is `SEND_EVENTS` or `SEND_ALL`.
+        """
         handles = []
         if self.imu_mode not in [IMUMode.NONE, IMUMode.SEND_EVENTS]:
             handles.append(Handle.IMU_DATA.value)
@@ -609,13 +735,25 @@ class MyoClient(ABC):
         return handles
 
     def _get_classifier_handles(self) -> list[int]:
-        """Get list of classifier handles based on current mode."""
+        """
+        Return the list of GATT characteristic handles used for classifier events when the classifier is enabled.
+        
+        Returns:
+            list[int]: A list containing the classifier event handle, or an empty list if the classifier is not enabled.
+        """
         if self.classifier_mode == ClassifierMode.ENABLED:
             return [Handle.CLASSIFIER_EVENT.value]
         return []
 
     async def start(self) -> None:
-        """Start receiving notifications from the device."""
+        """
+        Start notification streaming from the connected device and enable device indicators.
+        
+        Subscribes to EMG, IMU, and classifier notification handles, triggers a short vibration, and sets the LED to cyan.
+        
+        Raises:
+            ValueError: If not connected or device modes have not been configured via setup().
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         if self.emg_mode is None or self.imu_mode is None:
@@ -639,13 +777,29 @@ class MyoClient(ABC):
         await self.led(RGB_CYAN)
 
     async def start_notify(self, handle: int, callback) -> None:
-        """Start notifications for a specific handle."""
+        """
+        Start notifications for the given GATT characteristic handle.
+        
+        Parameters:
+            handle (int): GATT characteristic handle to subscribe to.
+            callback (callable): Notification callback receiving (sender, data).
+        
+        Raises:
+            ValueError: If no BLE client is connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self._client.start_notify(handle, callback)
 
     async def stop(self) -> None:
-        """Stop receiving notifications from the device."""
+        """
+        Stop all active data notifications and indicate idle state on the device.
+        
+        Unsubscribes from EMG, IMU, and classifier notification handles, attempts two short vibrations, and sets the LED to green.
+        
+        Raises:
+            ValueError: If not connected (call connect()) or if modes are not set (call setup()).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         if self.emg_mode is None or self.imu_mode is None:
@@ -672,31 +826,72 @@ class MyoClient(ABC):
         logger.info("stopped notification from %s", self.device.name)
 
     async def stop_notify(self, handle: int) -> None:
-        """Stop notifications for a specific handle."""
+        """
+        Stop notifications for the given GATT characteristic handle.
+        
+        Parameters:
+            handle (int): GATT characteristic handle whose notifications should be stopped.
+        
+        Raises:
+            ValueError: If the client is not connected.
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self._client.stop_notify(handle)
 
     async def unlock(self, unlock_type) -> None:
-        """Unlock the device."""
+        """
+        Send an unlock command to the connected Myo device using the specified unlock type.
+        
+        Parameters:
+            unlock_type: Unlock command type that specifies the unlock behavior.
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.unlock(self._client, unlock_type)
 
     async def user_action(self, user_action_type) -> None:
-        """Send user action command."""
+        """
+        Send a user action command to the connected Myo device.
+        
+        Parameters:
+            user_action_type: The user action identifier to send (device-specific enum or value).
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.user_action(self._client, user_action_type)
 
     async def vibrate(self, vibration_type: VibrationType) -> None:
-        """Vibrate the device."""
+        """
+        Trigger a vibration on the connected Myo device.
+        
+        Parameters:
+            vibration_type (VibrationType): The vibration pattern/strength to send to the device.
+        
+        Raises:
+            ValueError: If the client is not connected (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.vibrate(self._client, vibration_type)
 
     async def vibrate2(self, duration: int, strength: int) -> None:
-        """Vibrate with custom duration and strength."""
+        """
+        Trigger a vibration on the device using the specified duration and strength.
+        
+        Parameters:
+            duration (int): Vibration duration (device-specific units).
+            strength (int): Vibration intensity (device-specific range).
+        
+        Raises:
+            ValueError: If no BLE connection is established (call connect() first).
+        """
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.vibrate2(self._client, duration, strength)

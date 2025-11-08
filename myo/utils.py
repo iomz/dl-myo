@@ -19,14 +19,24 @@ logger = logging.getLogger(__name__)
 
 async def gatt_char_to_dict(client: BleakClient, char: BleakGATTCharacteristic) -> Optional[dict]:
     """
-    Convert a GATT characteristic to a dictionary representation.
-
-    Args:
-        client: The BleakClient instance
-        char: The GATT characteristic to convert
-
+    Convert a GATT characteristic into a serializable dictionary with a human-readable name, UUID, properties, and optionally its value.
+    
+    Parameters:
+        client (BleakClient): BLE client used to read the characteristic value when the characteristic is readable.
+        char (BleakGATTCharacteristic): The characteristic to convert.
+    
     Returns:
-        Dictionary representation of the characteristic, or None if conversion fails
+        dict | None: A dictionary containing:
+            - "name" (str): Human-readable characteristic name.
+            - "uuid" (str): Characteristic UUID.
+            - "properties" (str): Comma-separated characteristic properties.
+            - "value" (varies, optional): Decoded value when the characteristic is readable:
+                - Manufacturer Name String: UTF-8 decoded `str`.
+                - Firmware Info: `dict` from `FirmwareInfo.to_dict()`.
+                - Firmware Version: `str` representation of `FirmwareVersion`.
+                - Battery Level: `int` interpreted from little-endian bytes.
+                - Other readable characteristics: hex-encoded `str`.
+          Returns `None` if the characteristic handle cannot be mapped to a known name.
     """
     try:
         char_name = Handle(char.handle).name

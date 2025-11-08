@@ -156,6 +156,19 @@ class FirmwareInfo:
         self._reserved = u[12:]
 
     def to_dict(self):
+        """
+        Return a dictionary containing parsed firmware metadata.
+        
+        Returns:
+            dict: Mapping with keys:
+                - "serial_number": Serial number as an uppercase, colon-separated hex string.
+                - "unlock_pose": Name of the configured unlock pose.
+                - "active_classifier_type": Name of the active classifier model type.
+                - "active_classifier_index": Index of the active classifier.
+                - "has_custom_classifier": `True` if a custom classifier is present, `False` otherwise.
+                - "stream_indicating": `True` if stream-indicating is enabled, `False` otherwise.
+                - "sku": Name of the device SKU.
+        """
         return {
             "serial_number": self._serial_number,
             "unlock_pose": self._unlock_pose,
@@ -347,16 +360,44 @@ class AggregatedData:
     """Aggregated data type combining FV (filtered value) and IMU data."""
 
     def __init__(self, fvd: FVData, imu: IMUData):
+        """
+        Create an AggregatedData container that holds paired FVData and IMUData.
+        
+        Parameters:
+            fvd (FVData): Filtered-value data payload to include.
+            imu (IMUData): IMU data payload to include.
+        """
         self.fvd = fvd
         self.imu = imu
 
     def __str__(self):
+        """
+        Return a compact comma-separated string combining FV values and IMU data.
+        
+        Returns:
+            str: A string containing the `fvd.fv` values joined by commas, followed by a comma and the string form of the `imu` object.
+        """
         return f"{','.join(map(str, self.fvd.fv))},{self.imu}"
 
     def json(self):
+        """
+        Serialize the object to a JSON-formatted string.
+        
+        The JSON is produced from the object's dictionary representation returned by `to_dict()`.
+        
+        Returns:
+            str: JSON string representing the object's data.
+        """
         return json.dumps(self.to_dict())
 
     def to_dict(self):
+        """
+        Convert the aggregated FVData and IMUData into a JSON-serializable dictionary.
+        
+        Returns:
+            dict: A mapping with keys "fvd" and "imu" where values are the result of
+                calling `to_dict()` on the contained FVData and IMUData instances, respectively.
+        """
         return {"fvd": self.fvd.to_dict(), "imu": self.imu.to_dict()}
 
 
@@ -364,13 +405,39 @@ class EMGDataSingle:
     """Single EMG data sample from EMGData."""
 
     def __init__(self, data):
+        """
+        Initialize the EMGDataSingle wrapper with a single EMG sample.
+        
+        Parameters:
+            data (sequence[int] | bytes | list): The raw EMG sample to wrap; typically a sequence of 8 signed byte values.
+        """
         self.data = data
 
     def __str__(self):
+        """
+        Produce a string representation of the wrapped EMG data.
+        
+        Returns:
+            str: String representation of the underlying `data` attribute.
+        """
         return str(self.data)
 
     def json(self):
+        """
+        Serialize the object to a JSON-formatted string.
+        
+        The JSON is produced from the object's dictionary representation returned by `to_dict()`.
+        
+        Returns:
+            str: JSON string representing the object's data.
+        """
         return json.dumps(self.to_dict())
 
     def to_dict(self):
+        """
+        Return a dictionary representation of the EMGDataSingle containing the raw EMG sample.
+        
+        Returns:
+            dict: Mapping with key "data" holding the wrapped EMG sample.
+        """
         return {"data": self.data}
