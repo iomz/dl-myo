@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Lint
-        uses: chartboost/ruff-action@v3
+        uses: astral-sh/ruff-action@v3
   build:
     strategy:
       fail-fast: true
