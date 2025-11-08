@@ -1,8 +1,9 @@
 """
-    myo.utils
-    ------------
-    Utility functions for GATT characteristic handling
+myo.utils
+------------
+Utility functions for GATT characteristic handling
 """
+
 import binascii
 import logging
 from typing import Optional
@@ -47,12 +48,11 @@ async def gatt_char_to_dict(client: BleakClient, char: BleakGATTCharacteristic) 
             value = FirmwareInfo(blob).to_dict()
         elif char_name == Handle.FIRMWARE_VERSION.name:
             value = str(FirmwareVersion(blob))
-        elif char_name == Handle.BATTERY_LEVEL.name:
-            value = ord(blob)
+        elif char_name == Handle.BATTERY_LEVEL.name and blob:
+            value = int.from_bytes(blob, "little")
         else:
             value = binascii.b2a_hex(blob).decode("utf-8")
 
-    if value:
+    if value is not None:
         cd["value"] = value
     return cd
-

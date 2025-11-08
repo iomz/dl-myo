@@ -1,13 +1,15 @@
 """
-    myo.core
-    ----------------
-    The core Myo BLE device manager (Myo) and
-    a wrapper class (MyoClient) to handle the connection to Myo devices
+myo.core
+----------------
+The core Myo BLE device manager (Myo) and
+a wrapper class (MyoClient) to handle the connection to Myo devices
 
 """
+
 import asyncio
 import json
 import logging
+from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 from bleak import BleakClient, BleakScanner
@@ -73,14 +75,13 @@ class Myo:
         Returns:
             Myo instance if device is found, None otherwise
         """
+
         def match_myo_mac(device: BLEDevice, _: AdvertisementData) -> bool:
             return mac.lower() == device.address.lower()
 
         self = cls()
         try:
-            self._device = await BleakScanner.find_device_by_filter(
-                match_myo_mac, cb=dict(use_bdaddr=True)
-            )
+            self._device = await BleakScanner.find_device_by_filter(match_myo_mac, cb=dict(use_bdaddr=True))
             if self._device is None:
                 logger.error("could not find device with address %s", mac)
                 return None
@@ -98,17 +99,14 @@ class Myo:
         Returns:
             Myo instance if device is found, None otherwise
         """
+
         def match_myo_uuid(_: BLEDevice, adv: AdvertisementData) -> bool:
             return str(GATTProfile.MYO_SERVICE).lower() in adv.service_uuids
 
         self = cls()
-        self._device = await BleakScanner.find_device_by_filter(
-            match_myo_uuid, cb=dict(use_bdaddr=True)
-        )
+        self._device = await BleakScanner.find_device_by_filter(match_myo_uuid, cb=dict(use_bdaddr=True))
         if self._device is None:
-            logger.error(
-                "could not find device with service UUID %s", GATTProfile.MYO_SERVICE
-            )
+            logger.error("could not find device with service UUID %s", GATTProfile.MYO_SERVICE)
             return None
 
         return self
@@ -140,9 +138,7 @@ class Myo:
         """Put the device into deep sleep mode."""
         await self.command(client, DeepSleep())
 
-    async def led(
-        self, client: BleakClient, logo: list[int], line: list[int]
-    ) -> None:
+    async def led(self, client: BleakClient, logo: list[int], line: list[int]) -> None:
         """
         Set LED colors.
 
@@ -159,9 +155,7 @@ class Myo:
 
         for color_list, name in [(logo, "logo"), (line, "line")]:
             if any(not isinstance(v, int) or v < 0 or v > 255 for v in color_list):
-                raise ValueError(
-                    f"{name} values must be integers between 0 and 255: {color_list}"
-                )
+                raise ValueError(f"{name} values must be integers between 0 and 255: {color_list}")
 
         await self.command(client, LED(logo, line))
 
@@ -215,7 +209,7 @@ class Myo:
         except AttributeError:
             logger.debug(
                 "Myo.vibrate() raised AttributeError, BleakClient.is_connected: %s",
-                client.is_connected,
+                getattr(client, "is_connected", None),
             )
 
     async def vibrate2(self, client: BleakClient, duration: int, strength: int) -> None:
@@ -234,7 +228,7 @@ class Myo:
         await client.write_gatt_char(handle, value, True)
 
 
-class MyoClient:
+class MyoClient(ABC):
     """High-level client for interacting with Myo devices."""
 
     def __init__(self, aggregate_all: bool = False, aggregate_emg: bool = False) -> None:
@@ -374,6 +368,7 @@ class MyoClient:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.led(self._client, color, color)
 
+    @abstractmethod
     async def on_classifier_event(self, ce: ClassifierEvent) -> None:
         """Handle classifier events. Override in subclasses."""
         raise NotImplementedError()
@@ -392,12 +387,11 @@ class MyoClient:
                 self.imu_aggregated = data
             # trigger on_aggregated_data when both FVData and IMUData are ready
             if all(d is not None for d in (self.fv_aggregated, self.imu_aggregated)):
-                await self.on_aggregated_data(
-                    AggregatedData(self.fv_aggregated, self.imu_aggregated)
-                )
+                await self.on_aggregated_data(AggregatedData(self.fv_aggregated, self.imu_aggregated))
                 self.fv_aggregated = None
                 self.imu_aggregated = None
 
+    @abstractmethod
     async def on_aggregated_data(self, ad: AggregatedData) -> None:
         """
         Handle aggregated FV and IMU data.
@@ -411,6 +405,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def on_emg_data(self, emg: EMGData) -> None:
         """
         Handle EMG data. Override in subclasses.
@@ -420,6 +415,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def on_emg_data_aggregated(self, eds: EMGDataSingle) -> None:
         """
         Handle individual EMG data samples. Override in subclasses.
@@ -429,6 +425,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def on_fv_data(self, fvd: FVData) -> None:
         """
         Handle filtered value (FV) data. Override in subclasses.
@@ -438,6 +435,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def on_imu_data(self, imu: IMUData) -> None:
         """
         Handle IMU data. Override in subclasses.
@@ -447,6 +445,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def on_motion_event(self, me: MotionEvent) -> None:
         """
         Handle motion events. Override in subclasses.
@@ -456,9 +455,7 @@ class MyoClient:
         """
         raise NotImplementedError()
 
-    async def notify_callback(
-        self, sender: BleakGATTCharacteristic, data: bytearray
-    ) -> None:
+    async def notify_callback(self, sender: BleakGATTCharacteristic, data: bytearray) -> None:
         """
         Internal callback for handling GATT notifications.
 
@@ -699,5 +696,3 @@ class MyoClient:
         if self._client is None:
             raise ValueError("Not connected. Call connect() first.")
         await self.m.vibrate2(self._client, duration, strength)
-
-
