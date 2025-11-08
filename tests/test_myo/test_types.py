@@ -149,7 +149,7 @@ def test_motion_event(blob, out):
             bytearray(b'\x8e2\x94\x85;\xd2\x05\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
             {
                 'serial_number': 'D2:3B:85:94:32:8E',
-                'unlock_pose': True,
+                'unlock_pose': 'DOUBLE_TAP',  # Fixed: was True (buggy behavior)
                 'active_classifier_type': 'BUILTIN',
                 'active_classifier_index': 0,
                 'has_custom_classifier': True,
