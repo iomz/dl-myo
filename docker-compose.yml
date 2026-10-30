@@ -19,6 +19,8 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=myo
       - DOCKER_INFLUXDB_INIT_RETENTION=1w
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=super-secret-auth-token
+      # the initial setup fails if it finds the tracked config/influx-configs
+      - INFLUX_CONFIGS_PATH=/var/lib/influxdb2/influx-configs
     volumes:
       - $PWD/examples/influxdb/data:/var/lib/influxdb2
       - $PWD/examples/influxdb/config:/etc/influxdb2
